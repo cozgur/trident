@@ -18,12 +18,9 @@ follows is that a dry run forced with -Dcucumber.execution.dry-run=true on the M
 line is invisible here, because this script runs in a different process; the committed
 properties file is the vector that matters in CI.
 
-With --expect-zero-scenarios the script becomes the negative control: it asserts that a tag
-matching nothing really did run nothing. That requires a complete message log showing zero
-scenarios started — a missing log is a failure, not a pass, because absence of evidence is
-not evidence that the filter worked.
 """
 
+import argparse
 import json
 import pathlib
 import re
@@ -31,8 +28,8 @@ import sys
 import xml.etree.ElementTree as ET
 
 MODULE = pathlib.Path("trident-runner")
-SUREFIRE_REPORTS = MODULE / "target" / "surefire-reports"
-MESSAGES = MODULE / "target" / "cucumber-messages.ndjson"
+
+# Shared by both suites, so it is not an argument.
 JUNIT_PROPERTIES = MODULE / "src" / "test" / "resources" / "junit-platform.properties"
 
 DRY_RUN_SETTING = re.compile(r"^\s*cucumber\.execution\.dry-run\s*[=:]\s*true\s*$", re.IGNORECASE)
@@ -50,7 +47,7 @@ def dry_run_configured():
     return False
 
 
-def read_messages():
+def read_messages(messages):
     """Reduce the NDJSON stream to the few relations the checks need."""
     stream = {
         "run_finished": False,
@@ -60,10 +57,10 @@ def read_messages():
         "finished_cases": set(),  # test case started ids with a testCaseFinished
         "step_results": {},  # test case started id -> {test step id: status}
     }
-    if not MESSAGES.exists():
+    if not messages.exists():
         return stream, False
 
-    for line in MESSAGES.read_text(encoding="utf-8").splitlines():
+    for line in messages.read_text(encoding="utf-8").splitlines():
         if not line.strip():
             continue
         envelope = json.loads(line)
@@ -121,10 +118,10 @@ def passing_scenarios(stream):
     return passing
 
 
-def surefire_executed_tests():
-    reports = sorted(SUREFIRE_REPORTS.glob("TEST-*.xml"))
+def executed_tests(reports_dir):
+    reports = sorted(reports_dir.glob("TEST-*.xml"))
     if not reports:
-        print(f"  no Surefire reports under {SUREFIRE_REPORTS}")
+        print(f"  no reports under {reports_dir}")
         return 0
     total = 0
     for report in reports:
@@ -137,13 +134,22 @@ def surefire_executed_tests():
 
 
 def main():
-    expect_zero = "--expect-zero-scenarios" in sys.argv[1:]
-    stream, log_present = read_messages()
+    parser = argparse.ArgumentParser(description="Assert that a Cucumber suite executed work.")
+    parser.add_argument("--reports", required=True, type=pathlib.Path,
+                        help="directory holding the suite's TEST-*.xml reports")
+    parser.add_argument("--messages", required=True, type=pathlib.Path,
+                        help="the suite's Cucumber message log (NDJSON)")
+    parser.add_argument("--expect-zero-scenarios", action="store_true",
+                        help="negative control: require a completed run with no scenarios")
+    args = parser.parse_args()
+
+    expect_zero = args.expect_zero_scenarios
+    stream, log_present = read_messages(args.messages)
     scenarios = passing_scenarios(stream)
     failures = []
 
     print("Cucumber message log:")
-    print(f"  file present          = {log_present} ({MESSAGES})")
+    print(f"  file present          = {log_present} ({args.messages})")
     print(f"  testRunFinished       = {stream['run_finished']}")
     print(f"  scenarios started     = {len(stream['started'])}")
     print(f"  scenarios finished    = {len(stream['finished_cases'])}")
@@ -157,7 +163,7 @@ def main():
         )
 
     if not log_present:
-        failures.append(f"No Cucumber message log at {MESSAGES}; the suite did not report.")
+        failures.append(f"No Cucumber message log at {args.messages}; the suite did not report.")
     elif not stream["run_finished"]:
         failures.append(
             "The message log has no testRunFinished envelope. The stream is truncated, so its\n"
@@ -178,12 +184,12 @@ def main():
         print("forwarding into the forked JVM is effective.")
         return 0
 
-    print("Surefire reports:")
-    executed = surefire_executed_tests()
+    print(f"Reports in {args.reports}:")
+    executed = executed_tests(args.reports)
     print(f"  executed tests        = {executed}")
 
     if executed <= 0:
-        failures.append(f"Surefire executed {executed} tests; expected more than 0.")
+        failures.append(f"Reports show {executed} executed tests; expected more than 0.")
     if scenarios <= 0:
         failures.append(
             f"{scenarios} scenarios started, finished, ran every declared step and passed;\n"

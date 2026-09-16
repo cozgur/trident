@@ -184,6 +184,15 @@
     </plugins>
   </build>
 
+  <!--
+    Each profile sets the tag expression and decides which of the two suites runs.
+    trident-runner composes the expression per suite as "@smoke and (${trident.tags})" for
+    Surefire and "@api and (${trident.tags})" for Failsafe, so a suite can never execute the
+    other's scenarios whatever ${trident.tags} happens to be.
+
+    Only the api and regression profiles need Docker. The smoke profile - the default, and
+    the one the README quickstart uses - runs Surefire alone and stays Docker-free.
+  -->
   <profiles>
     <profile>
       <id>smoke</id>
@@ -192,12 +201,24 @@
       </activation>
       <properties>
         <trident.tags>@smoke</trident.tags>
+        <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
+        <trident.skip.api.suite>true</trident.skip.api.suite>
+      </properties>
+    </profile>
+    <profile>
+      <id>api</id>
+      <properties>
+        <trident.tags>@api</trident.tags>
+        <trident.skip.smoke.suite>true</trident.skip.smoke.suite>
+        <trident.skip.api.suite>false</trident.skip.api.suite>
       </properties>
     </profile>
     <profile>
       <id>regression</id>
       <properties>
         <trident.tags>not @wip</trident.tags>
+        <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
+        <trident.skip.api.suite>false</trident.skip.api.suite>
       </properties>
     </profile>
   </profiles>

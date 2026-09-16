@@ -22,25 +22,57 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # The smoke suite must stay runnable without Docker: it is what the README quickstart
+      # promises, and this step is the thing that keeps that promise honest.
       - name: Build and run the smoke suite
         run: ./mvnw -B clean verify -Psmoke
 
       # A green build is not evidence that anything ran. Surefire counts the JUnit Platform
       # suite container itself, so a run where Cucumber matched no scenarios still reports
-      # tests="1" skipped="1" and failIfNoTests stays quiet. This step checks Surefire's
-      # executed count and Cucumber's own message log independently, and prints both numbers
-      # before asserting so a failure is diagnosable from the log alone.
-      - name: Scenario-execution gate
-        run: python3 .github/scripts/execution-report.py
+      # tests="1" skipped="1" and failIfNoTests stays quiet. This step checks the executed
+      # count and Cucumber's own message log independently, and prints both numbers before
+      # asserting so a failure is diagnosable from the log alone.
+      - name: Scenario-execution gate - smoke suite
+        run: |
+          python3 .github/scripts/execution-report.py \
+            --reports trident-runner/target/surefire-reports \
+            --messages trident-runner/target/cucumber-messages.ndjson
 
       # A test of the test infrastructure, not of the framework. The gate above is only
       # meaningful if the tag filter actually reaches the forked test JVM: if it did not,
       # every run would execute every scenario and the gate would pass for the wrong reason.
       # Filtering on a tag no scenario carries must therefore execute nothing.
-      - name: Negative control - a tag matching nothing must run nothing
+      - name: Negative control - smoke suite
         run: |
           ./mvnw -B -pl trident-runner -am test -Psmoke -Dtrident.tags='@nonexistent'
-          python3 .github/scripts/execution-report.py --expect-zero-scenarios
+          python3 .github/scripts/execution-report.py \
+            --reports trident-runner/target/surefire-reports \
+            --messages trident-runner/target/cucumber-messages.ndjson \
+            --expect-zero-scenarios
+
+      # Everything below needs Docker. It is a precondition of the api suite alone; the
+      # steps above have already passed without it.
+      - name: Check Docker is available
+        run: |
+          docker info > /dev/null
+          echo "Docker is available: $(docker --version)"
+
+      - name: Run the api suite
+        run: ./mvnw -B verify -Papi
+
+      - name: Scenario-execution gate - api suite
+        run: |
+          python3 .github/scripts/execution-report.py \
+            --reports trident-runner/target/failsafe-reports \
+            --messages trident-runner/target/failsafe-cucumber-messages.ndjson
+
+      - name: Negative control - api suite
+        run: |
+          ./mvnw -B verify -Papi -Dtrident.tags='@nonexistent'
+          python3 .github/scripts/execution-report.py \
+            --reports trident-runner/target/failsafe-reports \
+            --messages trident-runner/target/failsafe-cucumber-messages.ndjson \
+            --expect-zero-scenarios
 
       - name: Upload test reports
         if: failure()
@@ -49,5 +81,7 @@ jobs:
           name: test-reports
           path: |
             trident-runner/target/surefire-reports/
+            trident-runner/target/failsafe-reports/
             trident-runner/target/cucumber-messages.ndjson
+            trident-runner/target/failsafe-cucumber-messages.ndjson
           if-no-files-found: warn

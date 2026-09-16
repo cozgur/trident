@@ -72,15 +72,48 @@
             <include>**/*TestSuite.java</include>
           </includes>
           <failIfNoTests>true</failIfNoTests>
+          <skipTests>${trident.skip.smoke.suite}</skipTests>
           <systemPropertyVariables>
             <!--
               Maven project properties are not visible to the forked test JVM. Forwarding
-              ${trident.tags} explicitly is what makes the smoke and regression profiles
-              take effect; without this the tag filter would simply be absent.
+              these explicitly is what makes the profiles take effect; without it the tag
+              filter would simply be absent.
+
+              The expression is composed rather than passed through: "@smoke and (...)"
+              means this suite can never execute an @api scenario, whatever ${trident.tags}
+              is set to. That is a structural guarantee, not a convention.
             -->
-            <cucumber.filter.tags>${trident.tags}</cucumber.filter.tags>
+            <cucumber.filter.tags>@smoke and (${trident.tags})</cucumber.filter.tags>
+            <!-- Each suite writes its own message log; see junit-platform.properties. -->
+            <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson</cucumber.plugin>
           </systemPropertyVariables>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <failIfNoTests>true</failIfNoTests>
+          <skipITs>${trident.skip.api.suite}</skipITs>
+          <systemPropertyVariables>
+            <!-- "@api and (...)": this suite can never execute a @smoke scenario. -->
+            <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
+            <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
