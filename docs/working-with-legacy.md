@@ -62,10 +62,10 @@ not the exception, and the method that works is:
 2. Find out whether anyone depends on it. Usually someone does.
 3. Only then decide whether it is correct.
 
-When the application is simply wrong — and ParaBank has arithmetic that is — the test asserts
-what the application does, with a comment saying it is wrong and a link to the issue. A test
-that asserts the correct answer against a product that gives the wrong one is a permanently
-red test, which teaches everyone to ignore red.
+When the application is simply wrong, the test asserts what the application does, with a
+comment saying it is wrong and a link to the issue. A test that asserts the correct answer
+against a product that gives the wrong one is a permanently red test, which teaches everyone
+to ignore red.
 
 ## What ParaBank is not
 
