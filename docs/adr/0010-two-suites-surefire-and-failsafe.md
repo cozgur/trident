@@ -20,9 +20,12 @@ Putting both behind one command would make Docker a prerequisite for the quickst
 
 Two suites, one per Maven test plugin.
 
-`TridentTestSuite` runs under Surefire and executes `@smoke` scenarios. No Docker.
-`TridentIT` runs under Failsafe — matched by `**/*IT.java` — and executes `@api` scenarios.
-Docker required.
+`TridentSuite` is the framework's abstract base class, carrying `@Suite` and
+`@IncludeEngines("cucumber")`. A project subclasses it once per suite and declares only its
+feature selection. In the reference implementation those subclasses are `ParaBankTestSuite`,
+which Surefire matches by name and which executes `@smoke` scenarios without Docker, and
+`ParaBankIT`, which Failsafe matches by `**/*IT.java` and which executes `@api` scenarios and
+requires Docker.
 
 Both select the same feature tree with `@SelectClasspathResource("features")`. They are kept
 apart by tag, not by directory.
@@ -82,6 +85,10 @@ adversarially rather than assumed:
   preferable to a scenario silently running in the wrong suite.
 - Adding a tag to the composition is a POM change, not a feature-file change. The coupling is
   explicit and lives in one place.
+- The suite classes were renamed when Phase 1 split `trident-runner` into a publishable module
+  and a reference implementation: what this ADR first called `TridentTestSuite` and `TridentIT`
+  is now the abstract `TridentSuite` plus the demo's `ParaBankTestSuite` and `ParaBankIT`. The
+  decision is unchanged — only the names are.
 
 ## Alternatives rejected
 

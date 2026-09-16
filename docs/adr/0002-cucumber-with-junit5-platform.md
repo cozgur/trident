@@ -18,10 +18,14 @@ the one that supports those without being replaced.
 Cucumber runs through `cucumber-junit-platform-engine`, selected by a JUnit Platform suite:
 
 ```java
+// Framework: the abstract base, published in trident-runner.
 @Suite
 @IncludeEngines("cucumber")
+public abstract class TridentSuite {}
+
+// Consumer project: declares only which features it wants.
 @SelectClasspathResource("features")
-public class TridentTestSuite {}
+public class ParaBankTestSuite extends TridentSuite {}
 ```
 
 Engine configuration — glue path, plugins, parallelism — lives in
