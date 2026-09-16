@@ -16,16 +16,19 @@ one you are expected to run before opening a PR.
 ./mvnw -Papi verify
 ```
 
-This runs the API scenarios against a ParaBank container and needs Docker. You are welcome to
-run it, but you are not expected to. CI runs it on every PR, and CI is the right place for it:
+This runs the API scenarios against a container holding the target application, and needs
+Docker. In this repository the target is ParaBank. You are welcome to run it, but you are not
+expected to. CI runs it on every PR, and CI is the right place for it:
 it takes longer and it will not fail for reasons that have anything to do with your laptop.
 
 If you only change production code and the smoke suite is green, open the PR.
 
 ## Adding a scenario
 
-Feature files live in `trident-runner/src/test/resources/features/`. Two tags decide where a
-scenario runs, and every scenario needs exactly one of them:
+Feature files live in your project's `src/test/resources/features/`. In this repository that
+is `trident-demo-parabank`, the reference implementation; in a consumer project it is the
+project the archetype generated. Two tags decide where a scenario runs, and every scenario
+needs exactly one of them:
 
 - `@smoke` — runs under Surefire, no Docker, must stay fast.
 - `@api` — runs under Failsafe against a real container.
@@ -40,8 +43,9 @@ yourself wanting to reuse the customer from the scenario above, write a second c
 instead — it costs one line and buys you a test that never fails because someone reordered
 the file.
 
-Do not call `cleanDB` or `initializeDB`. They exist in ParaBank and they would be easier. They
-also make every scenario depend on being the only thing running.
+Do not reach for a global reset endpoint. ParaBank has `cleanDB` and `initializeDB`, most
+applications have something like them, and they would all be easier. They also make every
+scenario depend on being the only thing running.
 
 ## When a test fails on your PR
 
@@ -65,7 +69,7 @@ a PR with unformatted code fails before anyone reviews it.
 
 Drawing this line is the point of this section. It is a commitment, not a courtesy.
 
-**You will not be asked to maintain locators.** When Phase 2 adds web tests, page objects and
+**You will not be asked to maintain locators.** When Phase 3 adds web tests, page objects and
 selectors belong to whoever owns the suite. If a UI change breaks a selector, that is our
 repair, not a task added to your PR.
 

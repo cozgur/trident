@@ -1,4 +1,4 @@
-# 5. Defer parallel execution to Phase 2
+# 5. Defer parallel execution
 
 ## Status
 
@@ -18,18 +18,18 @@ Phase 0 has one scenario. The whole suite finishes in well under a second.
 `junit-platform.properties` with a comment pointing at this decision. Surefire's `forkCount`
 stays at its default of 1, and neither `parallel` nor `threadCount` is configured.
 
-Parallel execution arrives in Phase 2, alongside Selenium, when there is a suite whose runtime
+Parallel execution arrives in Phase 3, alongside Selenium, when there is a suite whose runtime
 justifies it and real shared resources to reason about.
 
 ## Consequences
 
-- Phase 0 and Phase 1 runs are deterministic. A failure is the code's fault, not the
+- Runs are deterministic until then. A failure is the code's fault, not the
   scheduler's.
 - The design does not foreclose the change: scenario state is per-scenario through
-  Picocontainer with no static or `ThreadLocal` state, so turning the flag on in Phase 2 is a
+  Picocontainer with no static or `ThreadLocal` state, so turning the flag on in Phase 3 is a
   configuration change rather than a refactor. See
   [ADR 0003](0003-picocontainer-for-step-scope.md).
-- Suite runtime will grow until Phase 2. This is acceptable while it is measured in seconds.
+- Suite runtime will grow until Phase 3. This is acceptable while it is measured in seconds.
 - The flag is written out as `false` rather than omitted, so the default is a decision on the
   record instead of an accident.
 
@@ -39,7 +39,7 @@ justifies it and real shared resources to reason about.
 configuration is fresh in mind and it avoids revisiting the file. Rejected because it buys no
 wall-clock time on a one-scenario suite while introducing a class of intermittent failures,
 and because the first genuinely parallel-unsafe thing in the codebase will arrive with
-Selenium in Phase 2 — enabling it earlier means the flag has never been tested against
+Selenium in Phase 3 — enabling it earlier means the flag has never been tested against
 anything that could break under it.
 
 **Leave the property unset and rely on the default.** The default is already `false`.
@@ -48,4 +48,4 @@ contributor cannot tell a deliberate choice from an oversight.
 
 **Parallelise through Surefire `forkCount` instead.** Rejected because it parallelises at the
 JVM level, not the scenario level: each fork would re-run the whole suite discovery, and
-Cucumber's own scheduler is the thing Phase 2 actually needs.
+Cucumber's own scheduler is the thing Phase 3 actually needs.

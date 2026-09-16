@@ -27,19 +27,18 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 
-MODULE = pathlib.Path("trident-runner")
-
-# Shared by both suites, so it is not an argument.
-JUNIT_PROPERTIES = MODULE / "src" / "test" / "resources" / "junit-platform.properties"
+DEFAULT_JUNIT_PROPERTIES = pathlib.Path(
+    "trident-demo-parabank/src/test/resources/junit-platform.properties"
+)
 
 DRY_RUN_SETTING = re.compile(r"^\s*cucumber\.execution\.dry-run\s*[=:]\s*true\s*$", re.IGNORECASE)
 
 
-def dry_run_configured():
+def dry_run_configured(properties):
     """True if junit-platform.properties enables dry-run. Commented lines do not count."""
-    if not JUNIT_PROPERTIES.exists():
+    if not properties.exists():
         return False
-    for line in JUNIT_PROPERTIES.read_text(encoding="utf-8").splitlines():
+    for line in properties.read_text(encoding="utf-8").splitlines():
         if line.lstrip().startswith(("#", "!")):
             continue
         if DRY_RUN_SETTING.match(line):
@@ -139,6 +138,9 @@ def main():
                         help="directory holding the suite's TEST-*.xml reports")
     parser.add_argument("--messages", required=True, type=pathlib.Path,
                         help="the suite's Cucumber message log (NDJSON)")
+    parser.add_argument("--junit-properties", type=pathlib.Path,
+                        default=DEFAULT_JUNIT_PROPERTIES,
+                        help="the suite's junit-platform.properties, checked for dry-run")
     parser.add_argument("--expect-zero-scenarios", action="store_true",
                         help="negative control: require a completed run with no scenarios")
     args = parser.parse_args()
@@ -154,11 +156,12 @@ def main():
     print(f"  scenarios started     = {len(stream['started'])}")
     print(f"  scenarios finished    = {len(stream['finished_cases'])}")
     print(f"  scenarios passing     = {scenarios}")
-    print(f"  dry-run configured    = {dry_run_configured()} ({JUNIT_PROPERTIES})")
+    dry_run = dry_run_configured(args.junit_properties)
+    print(f"  dry-run configured    = {dry_run} ({args.junit_properties})")
 
-    if dry_run_configured():
+    if dry_run:
         failures.append(
-            f"{JUNIT_PROPERTIES} enables cucumber.execution.dry-run. A dry run reports every\n"
+            f"{args.junit_properties} enables cucumber.execution.dry-run. A dry run reports every\n"
             "step PASSED without invoking any step body, so it can never satisfy this gate."
         )
 

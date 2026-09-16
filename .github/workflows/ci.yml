@@ -22,6 +22,19 @@ jobs:
           java-version: '21'
           cache: maven
 
+      # The framework modules must not know which application is under test. The reference
+      # implementation lives in its own module; if its name, its container or its fixtures
+      # reach a published module, the framework has stopped being target-agnostic.
+      - name: Framework modules know nothing about the target
+        run: |
+          if grep -riE "parabank|testcontainers|docker" \
+               trident-core/src trident-api/src trident-runner/src \
+               trident-core/pom.xml trident-api/pom.xml trident-runner/pom.xml; then
+            echo "FAIL: target-specific reference found in a published module (above)."
+            exit 1
+          fi
+          echo "OK: no target-specific references in trident-core, trident-api or trident-runner."
+
       # The smoke suite must stay runnable without Docker: it is what the README quickstart
       # promises, and this step is the thing that keeps that promise honest.
       - name: Build and run the smoke suite
@@ -35,8 +48,8 @@ jobs:
       - name: Scenario-execution gate - smoke suite
         run: |
           python3 .github/scripts/execution-report.py \
-            --reports trident-runner/target/surefire-reports \
-            --messages trident-runner/target/cucumber-messages.ndjson
+            --reports trident-demo-parabank/target/surefire-reports \
+            --messages trident-demo-parabank/target/cucumber-messages.ndjson
 
       # A test of the test infrastructure, not of the framework. The gate above is only
       # meaningful if the tag filter actually reaches the forked test JVM: if it did not,
@@ -44,10 +57,10 @@ jobs:
       # Filtering on a tag no scenario carries must therefore execute nothing.
       - name: Negative control - smoke suite
         run: |
-          ./mvnw -B -pl trident-runner -am test -Psmoke -Dtrident.tags='@nonexistent'
+          ./mvnw -B -pl trident-demo-parabank -am test -Psmoke -Dtrident.tags='@nonexistent'
           python3 .github/scripts/execution-report.py \
-            --reports trident-runner/target/surefire-reports \
-            --messages trident-runner/target/cucumber-messages.ndjson \
+            --reports trident-demo-parabank/target/surefire-reports \
+            --messages trident-demo-parabank/target/cucumber-messages.ndjson \
             --expect-zero-scenarios
 
       # Everything below needs Docker. It is a precondition of the api suite alone; the
@@ -63,15 +76,15 @@ jobs:
       - name: Scenario-execution gate - api suite
         run: |
           python3 .github/scripts/execution-report.py \
-            --reports trident-runner/target/failsafe-reports \
-            --messages trident-runner/target/failsafe-cucumber-messages.ndjson
+            --reports trident-demo-parabank/target/failsafe-reports \
+            --messages trident-demo-parabank/target/failsafe-cucumber-messages.ndjson
 
       - name: Negative control - api suite
         run: |
           ./mvnw -B verify -Papi -Dtrident.tags='@nonexistent'
           python3 .github/scripts/execution-report.py \
-            --reports trident-runner/target/failsafe-reports \
-            --messages trident-runner/target/failsafe-cucumber-messages.ndjson \
+            --reports trident-demo-parabank/target/failsafe-reports \
+            --messages trident-demo-parabank/target/failsafe-cucumber-messages.ndjson \
             --expect-zero-scenarios
 
       - name: Upload test reports
@@ -80,8 +93,8 @@ jobs:
         with:
           name: test-reports
           path: |
-            trident-runner/target/surefire-reports/
-            trident-runner/target/failsafe-reports/
-            trident-runner/target/cucumber-messages.ndjson
-            trident-runner/target/failsafe-cucumber-messages.ndjson
+            trident-demo-parabank/target/surefire-reports/
+            trident-demo-parabank/target/failsafe-reports/
+            trident-demo-parabank/target/cucumber-messages.ndjson
+            trident-demo-parabank/target/failsafe-cucumber-messages.ndjson
           if-no-files-found: warn

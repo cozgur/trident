@@ -10,7 +10,7 @@ Trident's scenarios are written in Gherkin, and they have to be executed by some
 Maven, IDEs and CI already understand. Cucumber-JVM offers several runners, and the choice
 determines how scenarios are discovered, filtered, reported and eventually parallelised.
 
-Phase 2 will add parallel execution and Allure reporting, so the runner chosen now has to be
+Phase 3 will add parallel execution and Allure reporting, so the runner chosen now has to be
 the one that supports those without being replaced.
 
 ## Decision
@@ -38,7 +38,7 @@ none of Surefire's default naming patterns.
   with no Cucumber-specific tooling.
 - Tag filtering is a Maven profile concern, so `-Psmoke` and `-Pregression` select scenarios
   without editing any file.
-- The engine supports parallel execution through the same properties file, so Phase 2 turns
+- The engine supports parallel execution through the same properties file, so Phase 3 turns
   one flag on rather than changing runners.
 - The suite class is a container: Surefire counts it as a test in its own right. This makes
   `failIfNoTests` useless as evidence that scenarios ran, and is why execution is asserted
@@ -50,7 +50,7 @@ none of Surefire's default naming patterns.
 
 **`@RunWith(Cucumber.class)` (the JUnit 4 runner).** The most widely documented option.
 Rejected because it pins the project to JUnit 4, needs `junit-vintage-engine` to run beside
-JUnit 5 tests, and its parallelism story is worse — exactly the constraint Phase 2 runs into.
+JUnit 5 tests, and its parallelism story is worse — exactly the constraint Phase 3 runs into.
 
 **`@CucumberOptions` on the runner class.** Keeps configuration next to the runner and is
 familiar. Rejected because it belongs to the JUnit 4 runner, and because it puts the tag

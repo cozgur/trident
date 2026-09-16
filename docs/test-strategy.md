@@ -9,11 +9,11 @@ tests. Written for anyone on the team, not only engineers.
 belong — empty inputs, wrong types, boundary values. They do not tell us the system works:
 every unit can be correct while the product is broken.
 
-**API tests** send real HTTP requests to a running application and check the responses. They
-tell us the business rules hold: a transfer moves money, a login rejects a wrong password.
-They do not check that anything looks right, and they cannot catch a broken button.
+**API tests** send real HTTP requests to a running instance of the target application and check
+the responses. They tell us the business rules hold: a transfer moves money, a login rejects a
+wrong password. They do not check that anything looks right, and cannot catch a broken button.
 
-**Web tests** (arriving in Phase 2) drive a browser. They tell us a user can complete a
+**Web tests** (arriving in Phase 3) drive a browser. They tell us a user can complete a
 journey end to end. They are the slowest and most fragile, so we write the fewest of them. The
 rule: if a check can be made at the API layer, it is not a web test.
 
@@ -24,7 +24,7 @@ in production.
 ## Two suites, and why the fast one stays Docker-free
 
 There are two commands. `./mvnw -Psmoke verify` needs only Git and Java 21. `./mvnw -Papi
-verify` needs Docker and starts a real application in a container.
+verify` needs Docker and starts the target application in a container.
 
 The split exists because a suite that is inconvenient to run does not get run. The moment a
 developer must install Docker to check their change, the suite stops being something they use
@@ -70,10 +70,10 @@ It will miss anything about *quality* that is not a rule. A page that loads but 
 flow that works but confuses people, a screen that is technically accessible and practically
 unusable — every one of these passes.
 
-It will also miss anything that only appears at scale or under concurrency. ParaBank is a demo
-application with one user: us. Race conditions, slow queries against real data, and anything
-involving load are invisible here. See
-[working with legacy systems](working-with-legacy.md) for what else the target does not
-represent.
+It will also miss anything that only appears at scale or under concurrency. The reference
+target, ParaBank, is a demo application with one user: us. Race conditions, slow queries
+against real data, and anything involving load are invisible here. See
+[working with a legacy application](working-with-legacy.md) for what else a demo target does
+not represent.
 
 Naming these is not an apology. It is so nobody reads a green build as a claim it never made.

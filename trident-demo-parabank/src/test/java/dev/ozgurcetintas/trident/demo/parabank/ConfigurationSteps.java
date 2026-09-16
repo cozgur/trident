@@ -1,4 +1,4 @@
-package dev.ozgurcetintas.trident.runner;
+package dev.ozgurcetintas.trident.demo.parabank;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -12,8 +12,8 @@ import io.cucumber.java.en.Then;
  * Steps for the wiring scenario.
  *
  * <p>{@link ScenarioContext} arrives by constructor injection: Picocontainer builds this class
- * once per scenario and supplies the same context instance it gives to {@link Hooks}. Nothing
- * here is static, so two scenarios can never see each other's data.
+ * once per scenario and supplies the same context instance it gives to the framework's hooks.
+ * Nothing here is static, so two scenarios can never see each other's data.
  */
 public class ConfigurationSteps {
 

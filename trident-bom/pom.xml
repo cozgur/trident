@@ -33,6 +33,11 @@
     <!--
       Import BOM for downstream consumer projects: import this with <scope>import</scope>
       to depend on Trident modules without declaring their versions.
+
+      trident-demo-parabank is deliberately absent. The BOM manages publishable artifacts,
+      and the demo is a reference implementation rather than a product: listing it here
+      would invite a consumer to depend on ParaBank fixtures. It is a reactor module and
+      nothing more, and its own POM sets maven.deploy.skip.
     -->
     <dependencies>
       <dependency>

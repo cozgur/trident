@@ -36,7 +36,7 @@ the scenario context. If it passes, your toolchain is set up correctly.
 | `trident-bom` | Bill of materials. Consumer projects import this to depend on Trident modules without declaring versions. |
 | `trident-core` | Configuration resolution and the per-scenario context. |
 | `trident-api` | API testing support. Placeholder until Phase 1. |
-| `trident-web` | Web testing support. Placeholder until Phase 2. |
+| `trident-web` | Web testing support. Placeholder until Phase 3. |
 | `trident-mobile` | Mobile testing support. Placeholder until Phase 3. |
 | `trident-runner` | Cucumber and JUnit Platform wiring, and the smoke suite. |
 | `trident-archetype` | Project archetype. Placeholder until Phase 4. |
@@ -104,12 +104,27 @@ profile runs everything not tagged `@wip`.
 
 | Phase | Scope |
 |---|---|
-| 0 | Build skeleton and runner wiring |
-| 1 | `trident-core` + `trident-api`, ParaBank via Testcontainers, failsafe bound |
-| 2 | `trident-web` (Selenium 4), parallel execution, Allure |
-| 3 | `trident-mobile` (Appium 3 server / java-client 10) |
-| 4 | `trident-archetype` + Maven Central publish + consumer showcase repo |
+| 0 | Build skeleton and runner wiring — sealed at v0.1.0 |
+| 1 | `trident-api` + `trident-demo-parabank`, ParaBank via Testcontainers, failsafe bound |
+| 2 | `trident-archetype`, Maven Central publish, `trident-showcase` against a second target |
+| 3 | `trident-web` (Selenium 4), parallel execution, Allure |
+| 4 | `trident-mobile` (Appium 3 server / java-client 10) |
 | 5 | Documentation package and portfolio case study |
+
+The archetype comes before web and mobile on purpose. It is the proof of the central claim —
+that a new application needs only a generated project and feature files — and proving it after
+two more layers would mean unpicking the target-specific assumptions those layers accumulate.
+
+## Reference target: ParaBank
+
+Trident is developed against [ParaBank](https://github.com/parasoft/parabank), a banking demo
+application from around 2005. It was chosen because it is the hard case: a DOM with no test
+hooks, SOAP and REST that disagree, and global state. A framework proven against it does not
+depend on the target being friendly.
+
+ParaBank lives entirely in `trident-demo-parabank`. No framework module references it, and CI
+proves that with a grep over `trident-core`, `trident-api` and `trident-runner`. See
+[working with a legacy application](docs/working-with-legacy.md) for what that choice implies.
 
 ## Documentation
 

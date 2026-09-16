@@ -15,7 +15,7 @@
   <packaging>jar</packaging>
 
   <name>Trident Runner</name>
-  <description>Cucumber and JUnit Platform wiring.</description>
+  <description>Cucumber and JUnit Platform wiring, published for consumer projects.</description>
 
   <dependencies>
     <dependency>
@@ -23,27 +23,20 @@
       <artifactId>trident-core</artifactId>
       <version>${project.version}</version>
     </dependency>
-
     <dependency>
       <groupId>io.cucumber</groupId>
       <artifactId>cucumber-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.cucumber</groupId>
-      <artifactId>cucumber-junit-platform-engine</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.cucumber</groupId>
-      <artifactId>cucumber-picocontainer</artifactId>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.junit.platform</groupId>
-      <artifactId>junit-platform-suite</artifactId>
-      <scope>test</scope>
+      <artifactId>junit-platform-suite-api</artifactId>
     </dependency>
+    <!-- API only. The logging binding is the consumer's choice, not ours to make. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.junit.jupiter</groupId>
       <artifactId>junit-jupiter</artifactId>
@@ -54,68 +47,6 @@
       <artifactId>assertj-core</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>slf4j-simple</artifactId>
-      <scope>test</scope>
-    </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-surefire-plugin</artifactId>
-        <configuration>
-          <!-- TridentTestSuite does not match Surefire's default *Test/Test* patterns. -->
-          <includes>
-            <include>**/*TestSuite.java</include>
-          </includes>
-          <failIfNoTests>true</failIfNoTests>
-          <skipTests>${trident.skip.smoke.suite}</skipTests>
-          <systemPropertyVariables>
-            <!--
-              Maven project properties are not visible to the forked test JVM. Forwarding
-              these explicitly is what makes the profiles take effect; without it the tag
-              filter would simply be absent.
-
-              The expression is composed rather than passed through: "@smoke and (...)"
-              means this suite can never execute an @api scenario, whatever ${trident.tags}
-              is set to. That is a structural guarantee, not a convention.
-            -->
-            <cucumber.filter.tags>@smoke and (${trident.tags})</cucumber.filter.tags>
-            <!-- Each suite writes its own message log; see junit-platform.properties. -->
-            <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson</cucumber.plugin>
-          </systemPropertyVariables>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
-        <configuration>
-          <includes>
-            <include>**/*IT.java</include>
-          </includes>
-          <failIfNoTests>true</failIfNoTests>
-          <skipITs>${trident.skip.api.suite}</skipITs>
-          <systemPropertyVariables>
-            <!-- "@api and (...)": this suite can never execute a @smoke scenario. -->
-            <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
-            <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
-          </systemPropertyVariables>
-        </configuration>
-        <executions>
-          <execution>
-            <id>integration-test</id>
-            <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
 </project>

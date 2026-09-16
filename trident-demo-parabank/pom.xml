@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>dev.ozgurcetintas.trident</groupId>
+    <artifactId>trident-parent</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>trident-demo-parabank</artifactId>
+  <packaging>jar</packaging>
+
+  <name>Trident Demo: ParaBank</name>
+  <description>Reference implementation against ParaBank. Not published.</description>
+
+  <properties>
+    <!--
+      This module is the reference implementation, not a product. It shows what a consumer
+      project looks like, so publishing it would invite someone to depend on a demo.
+    -->
+    <maven.deploy.skip>true</maven.deploy.skip>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-runner</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-api</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-java</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-junit-platform-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-picocontainer</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-suite</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <!--
+    This build section is the pattern a consumer project copies. Nothing in it is specific to
+    ParaBank; what is specific to a project is the tag names and the feature path.
+  -->
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <configuration>
+          <!-- A suite class does not match Surefire's default *Test/Test* patterns. -->
+          <includes>
+            <include>**/*TestSuite.java</include>
+          </includes>
+          <failIfNoTests>true</failIfNoTests>
+          <skipTests>${trident.skip.smoke.suite}</skipTests>
+          <systemPropertyVariables>
+            <!--
+              Maven project properties are not visible to the forked test JVM. Forwarding
+              these explicitly is what makes the profiles take effect.
+
+              The expression is composed rather than passed through: "@smoke and (...)"
+              means this suite can never execute an @api scenario, whatever ${trident.tags}
+              is set to. That is a structural guarantee, not a convention.
+            -->
+            <cucumber.filter.tags>@smoke and (${trident.tags})</cucumber.filter.tags>
+            <!-- Each suite writes its own message log; see junit-platform.properties. -->
+            <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson</cucumber.plugin>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <failIfNoTests>true</failIfNoTests>
+          <skipITs>${trident.skip.api.suite}</skipITs>
+          <systemPropertyVariables>
+            <!-- "@api and (...)": this suite can never execute a @smoke scenario. -->
+            <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
+            <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+</project>

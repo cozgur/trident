@@ -70,7 +70,7 @@ never read. The symptom is silent — the configuration still loads, just entire
 `ConfigLoader.load` consequently creates a fresh `ConfigFactory.newInstance()` per call and
 sets `env` on that `Factory`. The static `ConfigFactory.setProperty` would also work and is
 what Owner's documentation shows, but it is JVM-global mutable state: it breaks test
-isolation, leaks one caller's environment into the next, and will race once Phase 2 enables
+isolation, leaks one caller's environment into the next, and will race once Phase 3 enables
 parallel execution. The instance factory confines that state to a single `load` call. The
 reason is recorded in a comment at the call site.
 

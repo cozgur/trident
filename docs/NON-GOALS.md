@@ -20,7 +20,7 @@ layer between the test and the code, so those stay in JUnit.
 **No parallel execution before there is a suite large enough to need it.** Parallelism buys
 wall-clock time at the cost of a class of intermittent failures, and paying that cost for a
 suite that finishes in seconds is a bad trade. See
-[ADR 0005](adr/0005-defer-parallel-execution-to-phase-2.md).
+[ADR 0005](adr/0005-defer-parallel-execution.md).
 
 **No convenience methods on `ScenarioContext` until a scenario needs them.** `size()`,
 `remove()` and `keySet()` are easy to add and hard to remove once step definitions depend on

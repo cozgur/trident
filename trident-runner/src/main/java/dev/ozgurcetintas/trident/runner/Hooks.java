@@ -10,6 +10,10 @@ import org.slf4j.LoggerFactory;
 /**
  * Scenario lifecycle hooks.
  *
+ * <p>Published as part of the framework: a consumer project puts
+ * {@code dev.ozgurcetintas.trident.runner} on its Cucumber glue path and gets these hooks
+ * without writing them. They know nothing about any application under test.
+ *
  * <p>The {@link ScenarioContext} is injected by Picocontainer, which creates one instance per
  * scenario and hands that same instance to every glue class in the scenario. Clearing it at
  * both ends is belt and braces: a fresh instance is already empty, and clearing afterwards
