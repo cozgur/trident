@@ -1,11 +1,16 @@
 # Trident
 
 Trident is a Java test automation framework that covers web, mobile and API testing behind a
-single Cucumber runner. It is published as a Maven artifact, so a project adds it as a
-dependency and writes feature files and step definitions of its own rather than forking a
-template repository and maintaining a copy of the plumbing. This repository is the framework
-itself; Phase 0 contains the build skeleton, configuration resolution, the scenario context
-and one scenario that proves the runner is wired end to end.
+single Cucumber runner. It is consumed as a Maven artifact, not forked: a project depends on
+the modules it needs, imports [`trident-bom`](trident-bom/pom.xml) to avoid declaring versions,
+and writes feature files and step definitions of its own. From Phase 2 the way to start is to
+generate a project from `trident-archetype`, which produces the suite classes, the plugin
+wiring and a first feature file; onboarding a new application should be a matter of writing
+scenarios, not of rebuilding the plumbing.
+
+The framework modules know nothing about any particular application. Trident is developed
+against a reference target — see [ParaBank](#reference-target-parabank) below — which lives in
+its own module and is never published.
 
 ## Run your first test in 5 minutes
 
@@ -35,11 +40,12 @@ the scenario context. If it passes, your toolchain is set up correctly.
 |---|---|
 | `trident-bom` | Bill of materials. Consumer projects import this to depend on Trident modules without declaring versions. |
 | `trident-core` | Configuration resolution and the per-scenario context. |
-| `trident-api` | API testing support. Placeholder until Phase 1. |
+| `trident-api` | API testing support: request specifications built from configuration. |
 | `trident-web` | Web testing support. Placeholder until Phase 3. |
-| `trident-mobile` | Mobile testing support. Placeholder until Phase 3. |
-| `trident-runner` | Cucumber and JUnit Platform wiring, and the smoke suite. |
-| `trident-archetype` | Project archetype. Placeholder until Phase 4. |
+| `trident-mobile` | Mobile testing support. Placeholder until Phase 4. |
+| `trident-runner` | Suite base classes and Cucumber lifecycle hooks. Published. |
+| `trident-archetype` | Project archetype. Placeholder until Phase 2. |
+| `trident-demo-parabank` | Reference implementation against ParaBank. **Not published** — feature files, steps and fixtures live here. |
 
 ## Configuration
 
@@ -92,13 +98,22 @@ the short `spotless:apply` prefix does not resolve across the whole reactor.
 
 ## Running a subset
 
-The `smoke` profile is active by default and runs scenarios tagged `@smoke`. The `regression`
-profile runs everything not tagged `@wip`.
+Three profiles, and only one of them needs Docker.
+
+| Profile | Runs | Docker |
+|---|---|---|
+| `smoke` | `@smoke` scenarios under Surefire. Active by default. | no |
+| `api` | `@api` scenarios under Failsafe, against a container. | **yes** |
+| `regression` | everything not tagged `@wip`, on the Surefire side. | no |
 
 ```bash
 ./mvnw -Psmoke verify
+./mvnw -Papi verify
 ./mvnw -Pregression verify
 ```
+
+The quickstart above uses `smoke`, and it stays Docker-free on purpose. Only `-Papi` requires
+Docker.
 
 ## Roadmap
 
