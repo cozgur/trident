@@ -111,6 +111,15 @@ profile runs everything not tagged `@wip`.
 | 4 | `trident-archetype` + Maven Central publish + consumer showcase repo |
 | 5 | Documentation package and portfolio case study |
 
+## Documentation
+
+| Document | Who it is for |
+|---|---|
+| [CONTRIBUTING.md](CONTRIBUTING.md) | A developer on the team who needs to run the suite, add a scenario, or find out what it will not ask of them. |
+| [Test strategy](docs/test-strategy.md) | Anyone deciding whether the coverage is enough, including people who do not write code. |
+| [Runbook: a test failed](docs/runbook-failing-test.md) | Whoever is looking at red CI right now. |
+| [Working with a legacy application](docs/working-with-legacy.md) | Anyone asking why the target is a 2005 JSP app and what that changes. |
+
 ## Design decisions
 
 Decisions are recorded as ADRs in [`docs/adr/`](docs/adr/). Things Trident deliberately does
