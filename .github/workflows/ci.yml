@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    name: Build and verify
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Build and run the smoke suite
+        run: ./mvnw -B clean verify -Psmoke
+
+      # A green build is not evidence that anything ran. Surefire counts the JUnit Platform
+      # suite container itself, so a run where Cucumber matched no scenarios still reports
+      # tests="1" skipped="1" and failIfNoTests stays quiet. This step checks Surefire's
+      # executed count and Cucumber's own message log independently, and prints both numbers
+      # before asserting so a failure is diagnosable from the log alone.
+      - name: Scenario-execution gate
+        run: python3 .github/scripts/execution-report.py
+
+      # A test of the test infrastructure, not of the framework. The gate above is only
+      # meaningful if the tag filter actually reaches the forked test JVM: if it did not,
+      # every run would execute every scenario and the gate would pass for the wrong reason.
+      # Filtering on a tag no scenario carries must therefore execute nothing.
+      - name: Negative control - a tag matching nothing must run nothing
+        run: |
+          ./mvnw -B -pl trident-runner -am test -Psmoke -Dtrident.tags='@nonexistent'
+          python3 .github/scripts/execution-report.py --expect-zero-scenarios
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            trident-runner/target/surefire-reports/
+            trident-runner/target/cucumber-messages.ndjson
+          if-no-files-found: warn

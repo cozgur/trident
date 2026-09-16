@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <!--
+    This POM deliberately does not inherit from trident-parent. It is Trident's public
+    dependency contract, and an importing consumer receives the whole effective
+    dependencyManagement of whatever it imports. Inheriting would hand consumers the
+    parent's third-party alignment as well, so a bump of cucumber.version here would
+    silently re-pin downstream builds. See docs/adr/0006-standalone-bom.md.
+
+    The consequence is that the version below is literal and duplicated from the parent.
+    Keep the two in step with `versions:set`, which updates non-inheriting modules too.
+  -->
+  <groupId>dev.ozgurcetintas.trident</groupId>
+  <artifactId>trident-bom</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>pom</packaging>
+
+  <name>Trident BOM</name>
+  <description>Bill of materials for consumers of Trident.</description>
+
+  <dependencyManagement>
+    <!--
+      Import BOM for downstream consumer projects: import this with <scope>import</scope>
+      to depend on Trident modules without declaring their versions.
+    -->
+    <dependencies>
+      <dependency>
+        <groupId>dev.ozgurcetintas.trident</groupId>
+        <artifactId>trident-core</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.ozgurcetintas.trident</groupId>
+        <artifactId>trident-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.ozgurcetintas.trident</groupId>
+        <artifactId>trident-web</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.ozgurcetintas.trident</groupId>
+        <artifactId>trident-mobile</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.ozgurcetintas.trident</groupId>
+        <artifactId>trident-runner</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>dev.ozgurcetintas.trident</groupId>
+        <artifactId>trident-archetype</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <!--
+      This block exists solely to stop CLI-invoked plugin goals from resolving their version
+      over the network inside this module. Because this POM does not inherit, it has no
+      pluginManagement of its own, and a goal such as
+      `mvn com.diffplug.spotless:spotless-maven-plugin:apply` run from the repository root
+      would pick the latest release here while every other module used the pinned one.
+
+      The version is literal: a standalone POM cannot reach the parent's spotless.version
+      property. Bump it together with spotless.version in trident-parent.
+    -->
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.diffplug.spotless</groupId>
+          <artifactId>spotless-maven-plugin</artifactId>
+          <version>2.44.5</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+</project>

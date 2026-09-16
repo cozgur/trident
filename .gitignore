@@ -1,0 +1,27 @@
+# Maven build output
+target/
+pom.xml.versionsBackup
+release.properties
+
+# The Maven Wrapper is committed on purpose: it is what makes Java 21 and Git the only
+# prerequisites. Do not add .mvn/ here.
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse / VS Code
+.classpath
+.project
+.settings/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
