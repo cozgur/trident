@@ -41,9 +41,22 @@ and reaches no consumer.
 - An import of `trident-bom` manages the six Trident artifacts and nothing else. Consumers
   choose their own Cucumber, JUnit and AssertJ versions.
 - The project version now appears literally in two places: the parent POM and the BOM. They
-  must be kept in step. Release tooling must use `versions:set`, which updates non-inheriting
-  modules in the reactor as well; a hand edit of the parent alone will produce a BOM that
-  manages a version that was never built.
+  must be kept in step, and doing so requires a specific command:
+
+  ```
+  ./mvnw versions:set -DnewVersion=X -DprocessAllModules=true
+  ```
+
+  `-DprocessAllModules=true` is required, not a refinement. This was verified: running
+  `versions:set -DnewVersion=0.1.0` without it moved `trident-parent` and all six inheriting
+  modules to `0.1.0` and left `trident-bom` at `0.1.0-SNAPSHOT`. The build stays green, so
+  nothing announces the mistake — the result is a released BOM whose managed entries resolve
+  to `${project.version}` of a snapshot, which is exactly the class of silently-wrong release
+  this ADR exists to prevent. With the flag, all eight projects move together.
+
+  This raises the real cost of detaching the BOM above what was first assumed. The decision
+  stands, because a wrong version is caught by the release checklist and a leaked dependency
+  contract is not, but the cost is a release step that must not be improvised.
 - The BOM does not inherit the parent's plugin configuration. It needs none for the
   lifecycle — it has no sources to compile, format or test — but the absence of inherited
   `pluginManagement` had a consequence that was not anticipated. A plugin goal invoked from

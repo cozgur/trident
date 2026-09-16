@@ -13,7 +13,13 @@
     silently re-pin downstream builds. See docs/adr/0006-standalone-bom.md.
 
     The consequence is that the version below is literal and duplicated from the parent.
-    Keep the two in step with `versions:set`, which updates non-inheriting modules too.
+    Keep the two in step with:
+
+        ./mvnw versions:set -DnewVersion=X -DprocessAllModules=true
+
+    The flag is required, not optional. Without it versions:set does not reach a module that
+    has no parent, and this POM silently keeps the old version while the rest of the reactor
+    moves — publishing a released BOM that manages snapshot coordinates.
   -->
   <groupId>dev.ozgurcetintas.trident</groupId>
   <artifactId>trident-bom</artifactId>

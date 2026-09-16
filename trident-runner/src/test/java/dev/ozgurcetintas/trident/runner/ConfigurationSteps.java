@@ -26,7 +26,11 @@ public class ConfigurationSteps {
     @Given("the framework configuration is loaded")
     public void theFrameworkConfigurationIsLoaded() {
         TridentConfig config = ConfigProvider.get();
-        context.put("webBaseUrl", config.webBaseUrl());
+        // Composed here rather than read from a property file, so that the value's existence
+        // in the context is itself evidence that this method body ran.
+        context.put(
+                "resolvedConfiguration",
+                config.env() + "|" + config.webBaseUrl() + "|" + config.defaultTimeoutSeconds());
     }
 
     @Then("the web base URL is {string}")
@@ -39,8 +43,10 @@ public class ConfigurationSteps {
         assertThat(ConfigProvider.get().defaultTimeoutSeconds()).isEqualTo(expected);
     }
 
-    @Then("the web base URL recorded earlier is readable from the scenario context")
-    public void theWebBaseUrlRecordedEarlierIsReadable() {
-        assertThat(context.get("webBaseUrl", String.class)).isEqualTo("http://localhost");
+    @Then("the scenario context holds the resolved configuration {string}")
+    public void theScenarioContextHoldsTheResolvedConfiguration(String expected) {
+        // Throws if the earlier step never ran, because ScenarioContext.get rejects a missing
+        // key rather than returning null.
+        assertThat(context.get("resolvedConfiguration", String.class)).isEqualTo(expected);
     }
 }

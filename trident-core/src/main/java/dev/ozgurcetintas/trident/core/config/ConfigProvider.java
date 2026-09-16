@@ -10,12 +10,21 @@ import java.util.Map;
  * There is deliberately no {@code reset()}, {@code reload()} or setter: configuration is an
  * input to a test run, not something a test may change underneath other tests.
  *
- * <p><strong>Overriding values.</strong> Consumers override Trident's shipped defaults by
- * placing their own {@code config/default.properties} or {@code config/<env>.properties}
- * earlier on the classpath than {@code trident-core}. A project's own {@code src/test/resources}
- * precedes its dependencies, so a file there wins. Individual values can also be overridden at
- * run time with a system property ({@code -Dweb.base.url=...}) or an environment variable
- * ({@code WEB_BASE_URL=...}), both of which outrank every file.
+ * <p><strong>Overriding a single value.</strong> Use a system property
+ * ({@code -Dweb.base.url=...}) or the mapped environment variable ({@code WEB_BASE_URL=...}).
+ * Both outrank every file layer and leave the remaining shipped defaults intact.
+ *
+ * <p><strong>Overriding with a file.</strong> A consumer's own
+ * {@code config/<env>.properties} is a different source path from
+ * {@code config/default.properties}, so the two merge: keys it defines win and keys it omits
+ * fall back to the shipped defaults.
+ *
+ * <p>Supplying a {@code config/default.properties} behaves differently. A consumer's copy sits
+ * earlier on the classpath and <em>shadows</em> the shipped file rather than merging with it,
+ * because {@code MERGE} combines the two distinct paths in {@code @Sources}, not two copies of
+ * the same path. A partial file leaves the omitted keys unresolved, and reading one throws
+ * {@link NullPointerException} rather than returning a default. A consumer replacing
+ * {@code config/default.properties} must supply a complete file defining all five keys.
  *
  * <p>Resolution happens in two stages. Stage 1 decides the active environment:
  * {@code -Denv}, then the {@code ENV} environment variable, then {@code local}. Stage 2 builds

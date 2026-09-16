@@ -52,9 +52,32 @@ first:
 3. `classpath:config/<env>.properties`
 4. `classpath:config/default.properties`
 
-A consumer project overrides a value by putting its own `config/default.properties` or
-`config/<env>.properties` earlier on the classpath — its own `src/test/resources` is enough —
-or per value at run time with `-Dweb.base.url=...` or `WEB_BASE_URL=...`.
+### Overriding a single value
+
+Use a system property or the mapped environment variable. Both sit above every file layer, so
+they override one key and leave the rest of the shipped defaults alone:
+
+```bash
+./mvnw -Psmoke verify -Dweb.base.url=https://staging.example.com
+WEB_BASE_URL=https://staging.example.com ./mvnw -Psmoke verify
+```
+
+The five keys and their variables are `env`/`ENV`, `web.base.url`/`WEB_BASE_URL`,
+`api.base.url`/`API_BASE_URL`, `timeout.default.seconds`/`TIMEOUT_DEFAULT_SECONDS` and
+`timeout.polling.millis`/`TIMEOUT_POLLING_MILLIS`.
+
+### Overriding with a file
+
+Add `config/<env>.properties` to your own resources and select it with `-Denv=<env>`. This is
+a different source path from `config/default.properties`, so the two merge: keys you define
+win, and keys you leave out fall back to Trident's shipped defaults.
+
+Supplying your own `config/default.properties` works differently, and the difference matters.
+Your copy is earlier on the classpath, so it **shadows** Trident's file rather than merging
+with it — `MERGE` combines the two distinct source paths, not two copies of the same path. A
+partial file therefore leaves the keys you omitted unresolved, and reading one throws a
+`NullPointerException` rather than returning a default. If you replace
+`config/default.properties`, supply a complete file defining all five keys.
 
 ## Formatting
 
