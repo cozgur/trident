@@ -190,8 +190,15 @@
     Surefire and "@api and (${trident.tags})" for Failsafe, so a suite can never execute the
     other's scenarios whatever ${trident.tags} happens to be.
 
-    Only the api and regression profiles need Docker. The smoke profile - the default, and
-    the one the README quickstart uses - runs Surefire alone and stays Docker-free.
+      profile      tags        suite           Docker
+      smoke        @smoke      Surefire only   no    (default; the README quickstart)
+      api          @api        Failsafe only   yes
+      regression   not @wip    Surefire only   no
+
+    regression is deliberately Surefire-only. It exists so a developer can run the full
+    local suite with one command, and making Docker a prerequisite for that would turn it
+    into a second api profile. Suite composition already limits "not @wip" to @smoke
+    scenarios on the Surefire side. CI runs smoke and api as separate steps.
   -->
   <profiles>
     <profile>
@@ -218,7 +225,7 @@
       <properties>
         <trident.tags>not @wip</trident.tags>
         <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
-        <trident.skip.api.suite>false</trident.skip.api.suite>
+        <trident.skip.api.suite>true</trident.skip.api.suite>
       </properties>
     </profile>
   </profiles>
