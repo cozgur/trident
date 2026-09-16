@@ -15,6 +15,29 @@
   <packaging>jar</packaging>
 
   <name>Trident API</name>
-  <description>API testing support. Placeholder module.</description>
+  <description>API testing support.</description>
+
+  <dependencies>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
 </project>

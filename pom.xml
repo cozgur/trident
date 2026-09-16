@@ -45,6 +45,7 @@
     <owner.version>1.0.12</owner.version>
     <cucumber.version>7.22.1</cucumber.version>
     <junit.version>5.12.2</junit.version>
+    <rest.assured.version>5.5.2</rest.assured.version>
     <assertj.version>3.27.3</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
 
@@ -82,6 +83,11 @@
         <groupId>org.aeonbits.owner</groupId>
         <artifactId>owner-java8</artifactId>
         <version>${owner.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.rest-assured</groupId>
+        <artifactId>rest-assured</artifactId>
+        <version>${rest.assured.version}</version>
       </dependency>
       <dependency>
         <groupId>org.assertj</groupId>
