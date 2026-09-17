@@ -166,7 +166,7 @@ pointing at a socket that does not exist.
 
 ## Design decisions
 
-Decisions are recorded as ADRs in [`docs/adr/`](docs/adr/). Things Trident deliberately does
+Decisions are recorded as ADRs, indexed in [`docs/adr/`](docs/adr/README.md). Things Trident deliberately does
 not do are listed in [`docs/NON-GOALS.md`](docs/NON-GOALS.md).
 
 ## License
