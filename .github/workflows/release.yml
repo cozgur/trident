@@ -1,0 +1,74 @@
+name: Release
+
+# Tags only. An ordinary push to main must never be able to publish: a release is a deliberate
+# act, and `git push` is not.
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    name: Build, sign and publish to Maven Central
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the tag
+        uses: actions/checkout@v5
+
+      # setup-java imports the signing key and writes the settings.xml server entry the
+      # publishing plugin reads. It also configures gpg-agent to accept the passphrase from
+      # MAVEN_GPG_PASSPHRASE, which is why the POM carries no pinentry configuration of its own.
+      - name: Set up Java 21 and the signing key
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          server-id: central
+          server-username: CENTRAL_TOKEN_USERNAME
+          server-password: CENTRAL_TOKEN_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
+
+      # The same checks main gets. A tag is not a reason to publish something that would have
+      # failed on a branch.
+      - name: Framework modules know nothing about the target
+        run: |
+          if grep -riE "parabank|testcontainers|docker" \
+               trident-core/src trident-api/src trident-runner/src \
+               trident-core/pom.xml trident-api/pom.xml trident-runner/pom.xml; then
+            echo "FAIL: target-specific reference found in a published module (above)."
+            exit 1
+          fi
+          echo "OK: no target-specific references in trident-core, trident-api or trident-runner."
+
+      - name: Build and run the smoke suite
+        run: ./mvnw -B clean verify -Psmoke
+
+      - name: Scenario-execution gate
+        run: |
+          python3 .github/scripts/execution-report.py \
+            --reports trident-demo-parabank/target/surefire-reports \
+            --messages trident-demo-parabank/target/cucumber-messages.ndjson
+
+      - name: Run the api suite
+        run: ./mvnw -B verify -Papi
+
+      - name: Publish
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: ./mvnw -B deploy -Prelease -DskipTests
+
+      - name: Upload the published artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts
+          path: |
+            */target/*.jar
+            */target/*.asc
+            */target/*.pom
+          if-no-files-found: warn

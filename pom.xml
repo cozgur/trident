@@ -21,11 +21,22 @@
     </license>
   </licenses>
 
+  <url>https://github.com/cozgur/trident</url>
+
   <developers>
     <developer>
+      <id>cozgur</id>
       <name>Ozgur Cetintas</name>
+      <email>ozgur.cetintas@yahoo.com</email>
     </developer>
   </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/cozgur/trident.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/cozgur/trident.git</developerConnection>
+    <url>https://github.com/cozgur/trident</url>
+    <tag>HEAD</tag>
+  </scm>
 
   <modules>
     <module>trident-bom</module>
@@ -63,6 +74,10 @@
     <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
     <spotless.plugin.version>2.44.5</spotless.plugin.version>
     <maven.archetype.plugin.version>3.4.1</maven.archetype.plugin.version>
+    <maven.gpg.plugin.version>3.2.8</maven.gpg.plugin.version>
+    <maven.source.plugin.version>3.4.0</maven.source.plugin.version>
+    <maven.javadoc.plugin.version>3.12.0</maven.javadoc.plugin.version>
+    <central.publishing.plugin.version>0.11.0</central.publishing.plugin.version>
     <archetype.packaging.version>3.4.1</archetype.packaging.version>
     <palantir.java.format.version>2.68.0</palantir.java.format.version>
   </properties>
@@ -250,6 +265,97 @@
         <trident.skip.api.suite>false</trident.skip.api.suite>
       </properties>
     </profile>
+    <!--
+      Signing, sources and javadoc live here and nowhere else. A local `verify` must never
+      reach for a GPG key: a contributor without one would be unable to build, and a build that
+      signs by accident is a build that can publish by accident.
+    -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>${maven.source.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>${maven.javadoc.plugin.version}</version>
+            <configuration>
+              <!--
+                trident-web and trident-mobile are placeholders holding a package-info and
+                nothing else, and javadoc refuses that outright: "No public or protected classes
+                found to document". Central accepts a placeholder javadoc jar for exactly this
+                case, so the jar is still attached and the build does not stop. A module with
+                real classes still fails here if its javadoc is broken, which is the behaviour
+                worth keeping.
+              -->
+              <failOnError>false</failOnError>
+            </configuration>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>${maven.gpg.plugin.version}</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+            <!--
+              No gpgArguments here on purpose. The plugin uses gpg-agent by default, which is
+              what lets a maintainer sign locally with the agent's cached passphrase, and lets
+              CI supply it through MAVEN_GPG_PASSPHRASE after the workflow has configured the
+              agent to accept a loopback passphrase. Hardcoding a loopback pinentry mode breaks
+              the first case: it disables pinentry, so an unattended local run has no way to
+              ask and simply hangs.
+            -->
+          </plugin>
+
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>${central.publishing.plugin.version}</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
+              <!-- The reference implementation is not a product; see ADR 0008. It also sets
+                   maven.deploy.skip, and this is the belt to that pair of braces. -->
+              <excludeArtifacts>
+                <excludeArtifact>trident-demo-parabank</excludeArtifact>
+              </excludeArtifacts>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
     <profile>
       <id>regression</id>
       <properties>

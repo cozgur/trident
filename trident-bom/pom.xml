@@ -28,6 +28,36 @@
 
   <name>Trident BOM</name>
   <description>Bill of materials for consumers of Trident.</description>
+  <url>https://github.com/cozgur/trident</url>
+
+  <!--
+    Central requires name, description, url, licenses, developers and scm on every published
+    artifact. This POM has no parent (see docs/adr/0006-standalone-bom.md), so it cannot
+    inherit them and carries its own copy. That is the third thing detaching the BOM costs,
+    after the duplicated version and the duplicated plugin pin.
+  -->
+  <licenses>
+    <license>
+      <name>MIT License</name>
+      <url>https://opensource.org/licenses/MIT</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+
+  <developers>
+    <developer>
+      <id>cozgur</id>
+      <name>Ozgur Cetintas</name>
+      <email>ozgur.cetintas@yahoo.com</email>
+    </developer>
+  </developers>
+
+  <scm>
+    <connection>scm:git:https://github.com/cozgur/trident.git</connection>
+    <developerConnection>scm:git:ssh://git@github.com/cozgur/trident.git</developerConnection>
+    <url>https://github.com/cozgur/trident</url>
+    <tag>HEAD</tag>
+  </scm>
 
   <dependencyManagement>
     <!--
@@ -94,5 +124,34 @@
       </plugins>
     </pluginManagement>
   </build>
+
+  <profiles>
+    <!--
+      Also not inherited. Signing is the only release step this POM needs - packaging is pom,
+      so there are no sources or javadoc to attach - and the publishing plugin runs from the
+      aggregator. Keep the versions in step with the parent's release profile.
+    -->
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>3.2.8</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

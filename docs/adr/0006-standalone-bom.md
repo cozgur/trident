@@ -74,6 +74,14 @@ and reaches no consumer.
 
   Excluding the module with `-pl '!trident-bom'` was rejected as a fix: it hides the symptom
   for one goal while leaving every other goal exposed.
+- A third duplication appeared at the first Maven Central release. Central requires `name`,
+  `description`, `url`, `licenses`, `developers` and `scm` on every published artifact, and a
+  release profile to sign it. The BOM inherits none of that, so it carries its own copy of all
+  six fields and its own signing configuration. The cost of detaching is therefore not one
+  duplicated string but three separate ones — version, plugin pin, and publication metadata —
+  and each is a thing that can drift. The decision still stands, for the reason it was taken:
+  a leaked dependency contract is silent, and all three of these are loud the moment they are
+  wrong, because Central rejects the release.
 - Trident may change its internal dependency versions without altering its public contract.
 
 ## Alternatives rejected
