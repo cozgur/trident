@@ -14,6 +14,11 @@ its own module and is never published.
 
 ## Run your first test in 5 minutes
 
+Measured, not estimated: **45 seconds** from a clean clone with an empty `~/.m2`, and
+**4 seconds** once the cache is warm. The first run is dominated by downloads — 430 artifacts,
+76 MB — so on a slow connection expect minutes rather than seconds. That is the network, not a
+broken build.
+
 Git and Java 21 are the only prerequisites. Maven comes from the wrapper committed in this
 repository, so there is nothing else to install.
 
@@ -121,7 +126,7 @@ Docker.
 |---|---|
 | 0 | Build skeleton and runner wiring — sealed at v0.1.0 |
 | 1 | `trident-api` + `trident-demo-parabank`, ParaBank via Testcontainers, failsafe bound |
-| 2 | `trident-archetype`, Maven Central publish, `trident-showcase` against a second target |
+| 2 | `trident-archetype`, Maven Central publish, and `trident-showcase` — a **separate repository**, not a module here, consuming Trident from Maven Central against a target unrelated to ParaBank |
 | 3 | `trident-web` (Selenium 4), parallel execution, Allure |
 | 4 | `trident-mobile` (Appium 3 server / java-client 10) |
 | 5 | Documentation package and portfolio case study |
@@ -129,6 +134,11 @@ Docker.
 The archetype comes before web and mobile on purpose. It is the proof of the central claim —
 that a new application needs only a generated project and feature files — and proving it after
 two more layers would mean unpicking the target-specific assumptions those layers accumulate.
+
+`trident-showcase` lives in its own repository for the same reason. A module inside this build
+would prove nothing: it would share the reactor, the parent POM and the local repository, so it
+could pass while the published artifacts were unusable to anyone outside. The showcase has to
+resolve Trident the way a stranger would.
 
 ## Reference target: ParaBank
 
