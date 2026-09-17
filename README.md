@@ -19,6 +19,11 @@ Measured, not estimated: **45 seconds** from a clean clone with an empty `~/.m2`
 76 MB — so on a slow connection expect minutes rather than seconds. That is the network, not a
 broken build.
 
+Adopting Trident in your own project is faster, because you generate rather than clone:
+**9 seconds** from `archetype:generate` to a passing suite, measured with every
+`dev.ozgurcetintas` artifact deleted from `~/.m2` so that all nine resolved from Central. See
+[Start a project](#start-a-project).
+
 Git and Java 21 are the only prerequisites. Maven comes from the wrapper committed in this
 repository, so there is nothing else to install.
 
@@ -38,6 +43,24 @@ The run ends with:
 That scenario loads the framework's configuration, checks that values fall back correctly
 between the two shipped property files, and passes a value from one step to the next through
 the scenario context. If it passes, your toolchain is set up correctly.
+
+## Start a project
+
+Trident is on Maven Central. Generate a project rather than cloning this one:
+
+```bash
+mvn archetype:generate \
+  -DarchetypeGroupId=dev.ozgurcetintas.trident \
+  -DarchetypeArtifactId=trident-archetype \
+  -DarchetypeVersion=0.2.1 \
+  -DgroupId=com.example -DartifactId=my-suite -Dprefix=My
+cd my-suite
+mvn -Psmoke verify
+```
+
+That ends with a passing scenario and no editing. You get both suites, the tag routing, the
+glue split and a first feature file already wired — the things this repository had to get wrong
+once before getting right.
 
 ## Modules
 
