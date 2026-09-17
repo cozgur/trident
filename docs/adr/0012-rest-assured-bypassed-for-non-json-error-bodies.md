@@ -36,15 +36,23 @@ Every non-2xx in this environment arrives as an exception.
 That one step issues its request with the JDK's `java.net.http.HttpClient`, records the status
 and body in the scenario context, and the assertion step reads both from there.
 
-Every other step keeps using `ParaBankApi.request()`, which is built from the framework's
-`RequestSpecFactory`. The bypass is one step wide and commented at the line, with the
-measurements above summarised, so nobody "simplifies" it back.
+Every other request in the suite goes through `ParaBankApi`, which is built from the
+framework's `RequestSpecFactory` — including the HTML registration form, which needs a
+different content type but the same base URI and timeouts. The bypass is one step wide and
+commented at the line, with the measurements above summarised, so nobody "simplifies" it back.
+
+That was not true when this record was first written. A pre-tag review found six call sites in
+`CustomerFactory` and `CustomerSteps` still using a bare `given()`, quietly opting out of the
+configured timeouts and the failure logging while this ADR claimed otherwise. They were routed
+through `ParaBankApi`, and the JDK client in the bypass gained the same timeout, which it had
+been missing.
 
 ## Consequences
 
 - The scenario asserts what it was written to assert: status `400` and the message text.
 - One step in the suite does not exercise the framework's request specification. That is a real
-  loss and the reason this is scoped to a single step rather than adopted as a pattern.
+  loss and the reason this is scoped to a single step rather than adopted as a pattern. It
+  carries the configured timeout explicitly so that it does not also opt out of that.
 - The JDK client is standard library, so nothing was added to the dependency tree.
 - Any future scenario asserting a 4xx or 5xx hits the same wall. When the second one appears,
   the right move is a small helper in the demo module rather than a second copy of this code —

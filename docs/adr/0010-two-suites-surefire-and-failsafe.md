@@ -98,9 +98,12 @@ adversarially rather than assumed:
   (`...parabank.container` and `...parabank.steps`) rather than a package and its subpackage —
   a subpackage would have been scanned anyway.
 
-  CI now enforces the promise rather than trusting the layout: a step runs the smoke suite with
-  `DOCKER_HOST` pointing at a socket that does not exist, before the ordinary smoke step, so a
-  suite reaching for a container fails immediately and under a name that says what happened.
+  CI now enforces the promise rather than trusting the layout, though not in the way it first
+  tried to. Pointing `DOCKER_HOST` at a socket that does not exist does not deny Docker —
+  Testcontainers falls back to its other discovery strategies and finds the runner's real
+  socket, which was measured by putting the lifecycle back on the smoke glue path and watching
+  the container start anyway. The step now asserts on evidence instead: it runs the smoke suite
+  and fails if the output shows any sign of a container.
 
 ## Alternatives rejected
 

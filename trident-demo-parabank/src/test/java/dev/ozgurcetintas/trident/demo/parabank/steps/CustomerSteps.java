@@ -1,16 +1,14 @@
 package dev.ozgurcetintas.trident.demo.parabank.steps;
 
-import static io.restassured.RestAssured.given;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.ozgurcetintas.trident.core.config.ConfigProvider;
 import dev.ozgurcetintas.trident.core.context.ScenarioContext;
 import dev.ozgurcetintas.trident.demo.parabank.fixtures.CustomerFactory;
+import dev.ozgurcetintas.trident.demo.parabank.fixtures.ParaBankApi;
 import dev.ozgurcetintas.trident.demo.parabank.fixtures.ParaBankCustomer;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-import io.restassured.http.ContentType;
 import java.util.List;
 
 /**
@@ -44,8 +42,7 @@ public class CustomerSteps {
     public void theCustomerCanLogIn() {
         ParaBankCustomer customer = context.get(CustomerFactory.CONTEXT_KEY, ParaBankCustomer.class);
 
-        int loggedIn = given().baseUri(ConfigProvider.get().apiBaseUrl())
-                .accept(ContentType.JSON)
+        int loggedIn = ParaBankApi.request()
                 .when()
                 .get("/parabank/services/bank/login/{u}/{p}", customer.username(), customer.password())
                 .then()
@@ -61,8 +58,7 @@ public class CustomerSteps {
     public void theCustomerOwnsExactlyOneAccount() {
         ParaBankCustomer customer = context.get(CustomerFactory.CONTEXT_KEY, ParaBankCustomer.class);
 
-        List<Integer> owners = given().baseUri(ConfigProvider.get().apiBaseUrl())
-                .accept(ContentType.JSON)
+        List<Integer> owners = ParaBankApi.request()
                 .when()
                 .get("/parabank/services/bank/customers/{id}/accounts", customer.customerId())
                 .then()

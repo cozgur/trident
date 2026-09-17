@@ -1,12 +1,9 @@
 package dev.ozgurcetintas.trident.demo.parabank.fixtures;
 
-import static io.restassured.RestAssured.given;
 import static org.hamcrest.Matchers.containsString;
 
-import dev.ozgurcetintas.trident.core.config.ConfigProvider;
 import dev.ozgurcetintas.trident.core.context.ScenarioContext;
 import io.restassured.filter.session.SessionFilter;
-import io.restassured.http.ContentType;
 import io.restassured.path.json.JsonPath;
 import java.util.UUID;
 
@@ -43,21 +40,13 @@ public class CustomerFactory {
      * @return the customer, its credentials and the account ParaBank opened with it
      */
     public ParaBankCustomer createCustomer() {
-        String baseUri = ConfigProvider.get().apiBaseUrl();
         String username = uniqueUsername();
         String password = "Trident" + username.substring(username.length() - 8);
 
         SessionFilter session = new SessionFilter();
-        given().filter(session)
-                .baseUri(baseUri)
-                .when()
-                .get("/parabank/register.htm")
-                .then()
-                .statusCode(200);
+        ParaBankApi.form(session).when().get("/parabank/register.htm").then().statusCode(200);
 
-        given().filter(session)
-                .baseUri(baseUri)
-                .contentType(ContentType.URLENC)
+        ParaBankApi.form(session)
                 .formParam("customer.firstName", "Trident")
                 .formParam("customer.lastName", "Fixture")
                 .formParam("customer.address.street", "1 Test Street")
@@ -79,8 +68,7 @@ public class CustomerFactory {
                 // later as an unexplained 400 from login.
                 .body(containsString("Your account was created successfully"));
 
-        JsonPath customer = given().baseUri(baseUri)
-                .accept(ContentType.JSON)
+        JsonPath customer = ParaBankApi.request()
                 .when()
                 .get("/parabank/services/bank/login/{username}/{password}", username, password)
                 .then()
@@ -89,8 +77,7 @@ public class CustomerFactory {
                 .jsonPath();
         int customerId = customer.getInt("id");
 
-        int accountId = given().baseUri(baseUri)
-                .accept(ContentType.JSON)
+        int accountId = ParaBankApi.request()
                 .when()
                 .get("/parabank/services/bank/customers/{id}/accounts", customerId)
                 .then()

@@ -18,6 +18,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
 
 /**
@@ -85,10 +86,17 @@ public class BankingSteps {
         ParaBankCustomer me = customer();
         String url = ConfigProvider.get().apiBaseUrl() + "/parabank/services/bank/login/" + me.username()
                 + "/not-the-password";
+        Duration timeout = Duration.ofSeconds(ConfigProvider.get().defaultTimeoutSeconds());
         try {
-            HttpResponse<String> response = HttpClient.newHttpClient()
+            HttpResponse<String> response = HttpClient.newBuilder()
+                    // The same timeout the framework's specification applies. Without it a
+                    // server that accepts the connection and never answers stalls the suite
+                    // and delays the container teardown behind it.
+                    .connectTimeout(timeout)
+                    .build()
                     .send(
                             HttpRequest.newBuilder(URI.create(url))
+                                    .timeout(timeout)
                                     .header("Accept", "application/json")
                                     .GET()
                                     .build(),

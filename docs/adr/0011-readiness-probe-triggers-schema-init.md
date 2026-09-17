@@ -46,19 +46,32 @@ rather than the whole repository.
 
 ## Decision
 
-Wait on `GET /parabank/index.htm` returning 200, with a bounded three-minute timeout.
+Two steps, in this order.
 
-The comment at the call site says so explicitly, because the choice looks wrong to anyone who
-has not seen the measurements and would otherwise be "corrected" back to the REST endpoint.
+The container waits on `GET /parabank/index.htm` returning 200, with a bounded three-minute
+timeout. That request is what makes ParaBank initialise, so the wait is part of the startup
+path rather than an observation of it.
+
+The lifecycle then asks the REST API directly — one bounded poll of
+`/parabank/services/bank/accounts/12345` — before it publishes the container's address. Only
+when that answers 200 can a scenario start.
+
+The comment at the call site says why the first step targets the home page, because the choice
+looks wrong to anyone who has not seen the measurements and would otherwise "correct" it to the
+REST endpoint alone, which never becomes ready.
 
 ## Consequences
 
 - The suite starts reliably, and the REST layer is usable by the time the first scenario runs.
 - The probe is load-bearing. Removing it, or narrowing it to a cheaper endpoint, does not just
   weaken a check — it can stop the application from initialising at all.
-- The probe does not prove the REST layer answers. That gap is covered where it belongs: the
-  `@Before("@api")` hook fails with one clear message if the container is not running, and the
-  first scenario to call the API would fail on its own assertions rather than on a timeout.
+- The probe does not prove the REST layer answers, and for a while nothing else did either.
+  This record used to claim the `@Before("@api")` hook covered that gap; it does not — the hook
+  asks whether the container process is running, which is a different question. A pre-tag
+  review caught the overclaim. The lifecycle now asks the REST API directly, once, after the
+  home page has triggered initialisation and before the address is published, and fails with
+  the last status it saw if the API never answers. The measured 0.1s gap between the page and
+  the API is an observation, not a guarantee, and this is what turns it into one.
 - The general lesson, and the reason this is an ADR rather than a comment: **a readiness probe
   against a lazily-initialised application is part of that application's startup path.**
   Choosing "the layer under test" as the probe is a sound instinct and was exactly wrong here.
@@ -78,7 +91,15 @@ initialisation. This was the first implementation and the suite timed out at 180
 request is served at +5.5s, so the wait would return 5.3 seconds too early. A JSP application
 accepting connections says nothing about whether a servlet can answer.
 
-**Probe the home page, then poll the REST endpoint as a second condition.** Rejected as
-unnecessary: the REST layer answered 0.1 seconds after the home page in every run, and a
-second wait strategy would add a failure mode for no measured benefit. If the gap ever widens,
-this is the change to make.
+**Probe only the home page, and trust that REST follows.** This was the first implementation
+and it is no longer what the code does. Rejected on review: the REST layer answered 0.1 seconds
+after the home page in every observed run, but every observed run is not every run, and the
+suite had nothing that would tell the difference between a slow API and a broken one. The
+lifecycle now waits on the home page — which is what triggers initialisation — and then asks
+the REST API directly before publishing the address.
+
+**Two Testcontainers wait strategies chained together.** The same effect, expressed in the
+container definition. Rejected because the second condition is not really readiness of the
+container: it is a question about the application that only makes sense after the first request
+has been served. Keeping it in the lifecycle puts it in the order it actually happens and lets
+the failure message carry the last status the API returned.

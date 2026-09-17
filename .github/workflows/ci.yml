@@ -49,15 +49,29 @@ jobs:
           fi
           echo "OK: no reference to cleanDB or initializeDB in any source tree."
 
-      # The quickstart promises Git and Java 21 are enough. This step is what keeps that
-      # promise honest: DOCKER_HOST points at a socket that does not exist, so anything
-      # reaching for a container fails here rather than three steps later for a reason nobody
-      # connects back. It has already caught one regression - a Cucumber @BeforeAll on a glue
-      # path both suites loaded started ParaBank for the smoke run too.
+      # The quickstart promises Git and Java 21 are enough, and this step keeps that promise
+      # honest. It has already caught one regression: a Cucumber @BeforeAll on a glue path both
+      # suites loaded started ParaBank for the smoke run too, with every test still green.
+      #
+      # The check is on evidence, not on denial. Pointing DOCKER_HOST at a socket that does not
+      # exist does NOT deny Docker: Testcontainers falls back to its other discovery
+      # strategies and finds the runner's real socket anyway. That was measured - with the
+      # lifecycle deliberately put back on the smoke glue path, the container started and the
+      # build passed with the bogus DOCKER_HOST set, and again with
+      # TESTCONTAINERS_DOCKER_CLIENT_STRATEGY forced. So instead of trying to hide Docker, this
+      # asserts that the smoke run shows no sign of having used it.
       - name: Smoke suite must not need Docker
         env:
           DOCKER_HOST: unix:///nonexistent/trident-docker-must-not-be-used.sock
-        run: ./mvnw -B clean verify -Psmoke
+        run: |
+          ./mvnw -B clean verify -Psmoke 2>&1 | tee smoke.log
+          if grep -qiE "testcontainers|ryuk|Creating container for image|ParaBank started" smoke.log; then
+            echo "FAIL: the smoke suite touched a container. Matching lines:"
+            grep -inE "testcontainers|ryuk|Creating container for image|ParaBank started" smoke.log | head -20
+            exit 1
+          fi
+          echo "OK: the smoke run shows no container activity."
+          rm -f smoke.log
 
       - name: Build and run the smoke suite
         run: ./mvnw -B clean verify -Psmoke
