@@ -1,4 +1,4 @@
-package dev.ozgurcetintas.trident.demo.parabank;
+package dev.ozgurcetintas.trident.demo.parabank.steps;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

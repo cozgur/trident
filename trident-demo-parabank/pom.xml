@@ -74,6 +74,11 @@
       <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <!--
@@ -102,6 +107,12 @@
               is set to. That is a structural guarantee, not a convention.
             -->
             <cucumber.filter.tags>@smoke and (${trident.tags})</cucumber.filter.tags>
+            <!--
+              No container package on this glue path. Cucumber's @BeforeAll runs for whatever
+              glue a suite loads, so including the lifecycle here would start ParaBank for the
+              Docker-free run and break the quickstart promise.
+            -->
+            <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps</cucumber.glue>
             <!-- Each suite writes its own message log; see junit-platform.properties. -->
             <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson</cucumber.plugin>
           </systemPropertyVariables>
@@ -120,6 +131,8 @@
           <systemPropertyVariables>
             <!-- "@api and (...)": this suite can never execute a @smoke scenario. -->
             <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
+            <!-- This suite adds the container lifecycle; only it needs Docker. -->
+            <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
             <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
           </systemPropertyVariables>
         </configuration>
