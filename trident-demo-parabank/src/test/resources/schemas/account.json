@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ParaBank account",
+  "description": "Structure only. The values are asserted by the scenarios that care about them; this says what an account is shaped like, so a field silently disappearing or changing type fails here rather than as a null three steps later.",
+  "type": "object",
+  "required": ["id", "customerId", "type", "balance"],
+  "properties": {
+    "id": { "type": "integer" },
+    "customerId": { "type": "integer" },
+    "type": { "type": "string", "enum": ["CHECKING", "SAVINGS", "LOAN"] },
+    "balance": { "type": "number" }
+  }
+}

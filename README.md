@@ -125,7 +125,7 @@ Docker.
 | Phase | Scope |
 |---|---|
 | 0 | Build skeleton and runner wiring — sealed at v0.1.0 |
-| 1 | `trident-api` + `trident-demo-parabank`, ParaBank via Testcontainers, failsafe bound |
+| 1 | `trident-api` + `trident-demo-parabank`, ParaBank via Testcontainers, failsafe bound — **done** |
 | 2 | `trident-archetype`, Maven Central publish, and `trident-showcase` — a **separate repository**, not a module here, consuming Trident from Maven Central against a target unrelated to ParaBank |
 | 3 | `trident-web` (Selenium 4), parallel execution, Allure |
 | 4 | `trident-mobile` (Appium 3 server / java-client 10) |
@@ -150,6 +150,10 @@ depend on the target being friendly.
 ParaBank lives entirely in `trident-demo-parabank`. No framework module references it, and CI
 proves that with a grep over `trident-core`, `trident-api` and `trident-runner`. See
 [working with a legacy application](docs/working-with-legacy.md) for what that choice implies.
+
+It runs in a container, so **`-Papi` needs Docker**. The quickstart does not: `-Psmoke` never
+starts a container, and CI proves that too, by running the smoke suite with `DOCKER_HOST`
+pointing at a socket that does not exist.
 
 ## Documentation
 

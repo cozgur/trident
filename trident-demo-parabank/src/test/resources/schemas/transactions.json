@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "ParaBank transaction list",
+  "description": "Structure only. A scenario asserts that a credit of a given amount is present; this asserts what every transaction looks like, including the fields no scenario reads.",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "accountId", "type", "date", "amount", "description"],
+    "properties": {
+      "id": { "type": "integer" },
+      "accountId": { "type": "integer" },
+      "type": { "type": "string", "enum": ["Credit", "Debit"] },
+      "date": { "type": "integer" },
+      "amount": { "type": "number" },
+      "description": { "type": "string" }
+    }
+  }
+}

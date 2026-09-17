@@ -1,5 +1,6 @@
 package dev.ozgurcetintas.trident.demo.parabank.steps;
 
+import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import dev.ozgurcetintas.trident.core.config.ConfigProvider;
@@ -145,6 +146,11 @@ public class BankingSteps {
                 .get("/parabank/services/bank/accounts/{id}", secondAccountId())
                 .then()
                 .statusCode(200)
+                // Structure, not values: the two assertions below cover the values this
+                // scenario cares about, and the schema covers the fields it does not read —
+                // so a field disappearing or changing type fails here rather than as a null
+                // somewhere later.
+                .body(matchesJsonSchemaInClasspath("schemas/account.json"))
                 .extract()
                 .jsonPath()
                 .getInt("customerId");
@@ -173,6 +179,7 @@ public class BankingSteps {
                 .get("/parabank/services/bank/accounts/{id}/transactions", secondAccountId())
                 .then()
                 .statusCode(200)
+                .body(matchesJsonSchemaInClasspath("schemas/transactions.json"))
                 .extract()
                 .jsonPath()
                 .getList("findAll { it.type == 'Credit' }.amount", Float.class);

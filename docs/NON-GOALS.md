@@ -22,6 +22,17 @@ wall-clock time at the cost of a class of intermittent failures, and paying that
 suite that finishes in seconds is a bad trade. See
 [ADR 0005](adr/0005-defer-parallel-execution.md).
 
+**No SOAP, although ParaBank exposes it.** The same data is reachable over REST in a shape
+that is simpler to assert on, and supporting two protocols to test one application would double
+the surface for no coverage.
+
+**`cleanDB` and `initializeDB` are never called.** A global reset means one thing can run at a
+time, forever — no parallel execution, no two engineers at once, no shared environment.
+Scenarios own their data instead, and CI greps the source trees for both names.
+
+**Testcontainers reuse is not enabled.** A reused container carries the previous run's
+customers and balances; every clean run starts from a fresh application.
+
 **No convenience methods on `ScenarioContext` until a scenario needs them.** `size()`,
 `remove()` and `keySet()` are easy to add and hard to remove once step definitions depend on
 them, so they wait for a concrete use.
