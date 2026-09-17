@@ -82,9 +82,6 @@ That deadline is the point. A quarantine with no expiry is deletion with extra s
 test still runs nowhere, but everyone gets to feel it is temporary. If the scenario is worth
 keeping, fourteen days is enough to fix it. If it is not, deleting it is honest.
 
-We currently have one quarantined scenario, tagged `@api @wip`, and its removal is written
-into the Phase 1 gate rather than left to goodwill.
-
 ## 6. When to delete instead of fix
 
 Delete the test when:
