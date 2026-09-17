@@ -89,6 +89,18 @@ adversarially rather than assumed:
   and a reference implementation: what this ADR first called `TridentTestSuite` and `TridentIT`
   is now the abstract `TridentSuite` plus the demo's `ParaBankTestSuite` and `ParaBankIT`. The
   decision is unchanged — only the names are.
+- Each suite declares its own **glue packages** in the POM, alongside its own tag expression
+  and message log. This was not the first design, and the first design was silently wrong: with
+  both suites loading one glue package, the container lifecycle's Cucumber `@BeforeAll` ran for
+  the Surefire suite too, so `-Psmoke` started ParaBank and the Docker-free promise was broken
+  while every test still passed. `@BeforeAll` runs for whatever glue a suite loads, and glue
+  scanning is recursive, so the lifecycle and the shared steps live in **sibling** packages
+  (`...parabank.container` and `...parabank.steps`) rather than a package and its subpackage —
+  a subpackage would have been scanned anyway.
+
+  CI now enforces the promise rather than trusting the layout: a step runs the smoke suite with
+  `DOCKER_HOST` pointing at a socket that does not exist, before the ordinary smoke step, so a
+  suite reaching for a container fails immediately and under a name that says what happened.
 
 ## Alternatives rejected
 

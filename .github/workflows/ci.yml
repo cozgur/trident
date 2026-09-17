@@ -35,8 +35,30 @@ jobs:
           fi
           echo "OK: no target-specific references in trident-core, trident-api or trident-runner."
 
-      # The smoke suite must stay runnable without Docker: it is what the README quickstart
-      # promises, and this step is the thing that keeps that promise honest.
+      # Rule: a scenario owns its data and never resets ParaBank underneath another test.
+      # It is stated in CONTRIBUTING, in the strategy and in an ADR; this makes it checked.
+      # Scoped to source trees because ADR 0011 documents ParaBank's own first-boot redirect
+      # to initializeDB.htm and has to be able to name it.
+      - name: No global database reset
+        run: |
+          if grep -rInE "cleanDB|initializeDB" --include='*.java' --include='*.feature' \
+               --include='*.properties' --include='*.xml' */src .github; then
+            echo "FAIL: a global ParaBank reset endpoint is referenced above."
+            echo "Scenarios own their data; see docs/adr/0011-readiness-probe-triggers-schema-init.md."
+            exit 1
+          fi
+          echo "OK: no reference to cleanDB or initializeDB in any source tree."
+
+      # The quickstart promises Git and Java 21 are enough. This step is what keeps that
+      # promise honest: DOCKER_HOST points at a socket that does not exist, so anything
+      # reaching for a container fails here rather than three steps later for a reason nobody
+      # connects back. It has already caught one regression - a Cucumber @BeforeAll on a glue
+      # path both suites loaded started ParaBank for the smoke run too.
+      - name: Smoke suite must not need Docker
+        env:
+          DOCKER_HOST: unix:///nonexistent/trident-docker-must-not-be-used.sock
+        run: ./mvnw -B clean verify -Psmoke
+
       - name: Build and run the smoke suite
         run: ./mvnw -B clean verify -Psmoke
 
