@@ -54,11 +54,15 @@ explain beat four hundred that hit 90%.
 The smoke suite must finish in **under 60 seconds**. That figure is measured — today it takes
 a few — and the budget exists to keep it there.
 
-The API suite has no budget yet, because it has never run. Any number written today would be
-invented, and an invented budget either gets quietly rewritten when reality disagrees or stays
-wrong. The figure gets set the first time the suite runs in Phase 1, and recorded here.
+The API suite must finish in **under 5 minutes**. Measured, on the run that set it: 16 seconds
+locally with the image cached, and 33 seconds in CI including a 9-second image pull and a
+22-second container start. Nearly all of it is the container; the eight scenarios themselves
+total 2.6 seconds.
 
-> Budget: to be set. Container cold start is measured in CP 1.2; the suite total follows.
+The ceiling is deliberately far above the measurement, because container start is the part that
+varies with how loaded a CI runner is, and a budget that fails on a slow morning teaches people
+to re-run rather than to look. The number worth watching is the drift from 33 seconds, not the
+distance to the ceiling — if a change doubles it, investigate then, not at minute five.
 
 Exceeding a budget is a failure to fix, not a new normal. The first response is to delete or
 merge scenarios, not to buy a bigger CI machine. A suite that creeps from two minutes to
