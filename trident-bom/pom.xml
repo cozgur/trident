@@ -23,7 +23,7 @@
   -->
   <groupId>dev.ozgurcetintas.trident</groupId>
   <artifactId>trident-bom</artifactId>
-  <version>0.1.0-SNAPSHOT</version>
+  <version>0.2.1</version>
   <packaging>pom</packaging>
 
   <name>Trident BOM</name>
@@ -148,6 +148,24 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+
+          <!--
+            Also not inherited, and the dry run is how we found out: without this the default
+            maven-deploy-plugin runs for this module instead, and the BOM never reaches the
+            Portal at all. Keep the version and the server id in step with the parent's release
+            profile. This is the fourth thing detaching the BOM costs.
+          -->
+          <plugin>
+            <groupId>org.sonatype.central</groupId>
+            <artifactId>central-publishing-maven-plugin</artifactId>
+            <version>0.11.0</version>
+            <extensions>true</extensions>
+            <configuration>
+              <publishingServerId>central</publishingServerId>
+              <autoPublish>true</autoPublish>
+              <waitUntil>published</waitUntil>
+            </configuration>
           </plugin>
         </plugins>
       </build>

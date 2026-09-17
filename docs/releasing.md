@@ -92,6 +92,25 @@ who already pinned it keeps resolving it.
 
 So the checks that matter run before the tag, not after.
 
+## A local gotcha: the Turkish locale
+
+On a machine with a `tr_TR` locale, the publishing plugin rejects its own configuration:
+
+```
+waitUntil must be one of the following values [uploaded, valıdated, publıshed]
+```
+
+Those are dotless `ı` characters. The plugin lowercases its allowed values without specifying a
+locale, and in Turkish `I` lowercases to `ı`, so the comparison against `published` can never
+match. It is a bug in the plugin, not in this project, and it does not affect CI, which runs
+under a neutral locale.
+
+If you release from a Turkish-locale machine, force the JVM's locale:
+
+```bash
+MAVEN_OPTS="-Duser.language=en -Duser.country=US" ./mvnw -B deploy -Prelease
+```
+
 ## Credentials
 
 Four GitHub Actions secrets, none of which exist outside repository settings:

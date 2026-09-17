@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.ozgurcetintas.trident</groupId>
     <artifactId>trident-parent</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.2.1</version>
   </parent>
 
   <artifactId>trident-archetype</artifactId>
