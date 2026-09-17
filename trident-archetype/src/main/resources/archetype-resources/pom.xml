@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>${groupId}</groupId>
+  <artifactId>${artifactId}</artifactId>
+  <version>${version}</version>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <trident.version>${tridentVersion}</trident.version>
+    <cucumber.version>7.22.1</cucumber.version>
+    <junit.version>5.12.2</junit.version>
+    <assertj.version>3.27.3</assertj.version>
+    <slf4j.version>2.0.17</slf4j.version>
+
+    <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
+    <maven.failsafe.plugin.version>3.5.6</maven.failsafe.plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <!-- Trident's own artifacts. Import this and you never write a Trident version again. -->
+      <dependency>
+        <groupId>dev.ozgurcetintas.trident</groupId>
+        <artifactId>trident-bom</artifactId>
+        <version>${trident.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.cucumber</groupId>
+        <artifactId>cucumber-bom</artifactId>
+        <version>${cucumber.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-runner</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-api</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-junit-platform-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.cucumber</groupId>
+      <artifactId>cucumber-picocontainer</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-suite</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <version>${assertj.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven.surefire.plugin.version}</version>
+        <configuration>
+          <!-- A suite class matches none of Surefire's default *Test/Test* patterns. -->
+          <includes>
+            <include>**/*TestSuite.java</include>
+          </includes>
+          <failIfNoTests>true</failIfNoTests>
+          <skipTests>${trident.skip.smoke.suite}</skipTests>
+          <systemPropertyVariables>
+            <!--
+              Maven project properties are not visible to the forked test JVM, so they are
+              forwarded explicitly. The tag expression is composed rather than passed through:
+              "@smoke and (...)" means this suite can never run an @api scenario, whatever
+              ${trident.tags} is set to.
+            -->
+            <cucumber.filter.tags>@smoke and (${trident.tags})</cucumber.filter.tags>
+            <!--
+              Glue is per suite. Cucumber's @BeforeAll runs for every glue package a suite
+              loads, so anything that starts a container must live in a package this suite does
+              not list - otherwise the fast suite starts it too.
+            -->
+            <cucumber.glue>dev.ozgurcetintas.trident.runner, ${package}.steps</cucumber.glue>
+            <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson</cucumber.plugin>
+          </systemPropertyVariables>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven.failsafe.plugin.version}</version>
+        <configuration>
+          <includes>
+            <include>**/*IT.java</include>
+          </includes>
+          <failIfNoTests>true</failIfNoTests>
+          <skipITs>${trident.skip.api.suite}</skipITs>
+          <systemPropertyVariables>
+            <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
+            <!-- Add your support package here when it holds glue, such as a container. -->
+            <cucumber.glue>dev.ozgurcetintas.trident.runner, ${package}.steps</cucumber.glue>
+            <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
+          </systemPropertyVariables>
+        </configuration>
+        <executions>
+          <execution>
+            <id>integration-test</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <!--
+    profile      tags        suite           Docker
+    smoke        @smoke      Surefire only   no    (default)
+    api          @api        Failsafe only   depends on your target
+    regression   not @wip    Surefire only   no
+  -->
+  <profiles>
+    <profile>
+      <id>smoke</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <trident.tags>@smoke</trident.tags>
+        <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
+        <trident.skip.api.suite>true</trident.skip.api.suite>
+      </properties>
+    </profile>
+    <profile>
+      <id>api</id>
+      <properties>
+        <trident.tags>@api</trident.tags>
+        <trident.skip.smoke.suite>true</trident.skip.smoke.suite>
+        <trident.skip.api.suite>false</trident.skip.api.suite>
+      </properties>
+    </profile>
+    <profile>
+      <id>regression</id>
+      <properties>
+        <trident.tags>not @wip</trident.tags>
+        <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
+        <trident.skip.api.suite>true</trident.skip.api.suite>
+      </properties>
+    </profile>
+  </profiles>
+
+</project>

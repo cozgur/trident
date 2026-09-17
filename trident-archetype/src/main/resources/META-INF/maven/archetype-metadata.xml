@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<archetype-descriptor xmlns="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0"
+                      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                      xsi:schemaLocation="https://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.1.0 https://maven.apache.org/xsd/archetype-descriptor-1.1.0.xsd"
+                      name="trident">
+
+  <requiredProperties>
+    <!-- Names the generated suite classes: <prefix>TestSuite and <prefix>IT. -->
+    <requiredProperty key="prefix">
+      <defaultValue>Example</defaultValue>
+    </requiredProperty>
+    <!--
+      The Trident release the generated project resolves. The default is filtered in from this
+      archetype's own version at build time, so it cannot drift; a user can still override it
+      with -DtridentVersion=... to generate against a different release.
+    -->
+    <requiredProperty key="tridentVersion">
+      <defaultValue>@project.version@</defaultValue>
+    </requiredProperty>
+  </requiredProperties>
+
+  <fileSets>
+    <!-- Suite classes sit in the project's own package; the __prefix__ in the file name is
+         substituted, which is why prefix is a required property rather than a plain one. -->
+    <fileSet filtered="true" packaged="true" encoding="UTF-8">
+      <directory>src/test/java</directory>
+      <includes>
+        <include>**/*.java</include>
+      </includes>
+    </fileSet>
+    <fileSet filtered="true" encoding="UTF-8">
+      <directory>src/test/resources</directory>
+      <includes>
+        <include>**/*.properties</include>
+        <include>**/*.feature</include>
+      </includes>
+    </fileSet>
+    <fileSet filtered="true" encoding="UTF-8">
+      <directory></directory>
+      <includes>
+        <include>README.md</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+
+</archetype-descriptor>
