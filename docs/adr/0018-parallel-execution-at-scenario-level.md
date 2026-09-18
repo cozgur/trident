@@ -195,3 +195,7 @@ URI would have to become thread-scoped rather than a single system property reso
 JVM, and none of that is parallel execution — it is a second isolation mechanism. Recorded here
 so the next person does not rediscover it: **when the application under test cannot be made
 concurrent, the unit of isolation stops being the scenario and becomes the instance.**
+
+Taken up and measured in [ADR 0019](0019-one-container-per-thread.md): it works — 0 of 20 runs
+becomes 20 of 20 — and it is about six seconds slower, because four containers cost more
+startup than four threads save at this suite's size.
