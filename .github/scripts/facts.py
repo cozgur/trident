@@ -25,6 +25,11 @@ ADR_FILE = re.compile(r"^\d{4}-.*\.md$")
 RELEASE = re.compile(r"<release>([^<]+)</release>")
 ARTIFACT_DIR = re.compile(r'href="([a-zA-Z0-9._-]+)/"')
 
+# One file per suite, written by that suite's execution gate. The count of suites is published
+# alongside the scenario total so the sentence on the portfolio cannot say "two suites" after a
+# third one arrives — which is exactly what it did say until CP 3.1.
+SUITE_EVIDENCE = ("smoke.json", "api.json", "web.json")
+
 
 def fetch(url):
     """Return the body, or None. Central being unreachable is not a build failure."""
@@ -95,7 +100,7 @@ def scenario_total(evidence):
     the total unknown rather than smaller — a half-counted total is worse than no number.
     """
     counts = []
-    for name in ("smoke.json", "api.json", "web.json"):
+    for name in SUITE_EVIDENCE:
         report = read_json(evidence / name)
         if report is None or report.get("scenarios") is None:
             print(f"  {name}: no scenario count, so the total is not derivable")
@@ -125,6 +130,7 @@ def main():
         "releasedVersion": version,
         "publishedModules": modules,
         "scenarios": scenarios,
+        "suites": len(SUITE_EVIDENCE) if scenarios is not None else None,
         "adrs": count_adrs(args.repo_root),
         "archetypeToGreenSeconds": onboarding.get("seconds") if onboarding else None,
         "generatedAt": datetime.now(timezone.utc).isoformat(timespec="milliseconds").replace("+00:00", "Z"),
