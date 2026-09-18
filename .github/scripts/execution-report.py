@@ -143,6 +143,8 @@ def main():
                         help="the suite's junit-platform.properties, checked for dry-run")
     parser.add_argument("--expect-zero-scenarios", action="store_true",
                         help="negative control: require a completed run with no scenarios")
+    parser.add_argument("--json", type=pathlib.Path,
+                        help="write the counts here, but only once the gate has passed")
     args = parser.parse_args()
 
     expect_zero = args.expect_zero_scenarios
@@ -204,6 +206,15 @@ def main():
         return 1
 
     print(f"\nOK: {executed} executed test(s), {scenarios} fully-executed passing scenario(s).")
+
+    # Written after the assertions, never before. A count that reaches facts.json has, by
+    # construction, come from a run this script was willing to pass.
+    if args.json:
+        args.json.parent.mkdir(parents=True, exist_ok=True)
+        counts = {"scenarios": scenarios, "executedTests": executed}
+        args.json.write_text(json.dumps(counts, indent=2) + "\n", encoding="utf-8")
+        print(f"  wrote {args.json}: {counts}")
+
     return 0
 
 

@@ -52,7 +52,7 @@ Trident is on Maven Central. Generate a project rather than cloning this one:
 mvn archetype:generate \
   -DarchetypeGroupId=dev.ozgurcetintas.trident \
   -DarchetypeArtifactId=trident-archetype \
-  -DarchetypeVersion=0.2.1 \
+  -DarchetypeVersion=1.0.0 \
   -DgroupId=com.example -DartifactId=my-suite -Dprefix=My
 cd my-suite
 mvn -Psmoke verify
