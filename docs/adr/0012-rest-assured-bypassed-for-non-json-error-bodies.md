@@ -55,8 +55,19 @@ been missing.
   carries the configured timeout explicitly so that it does not also opt out of that.
 - The JDK client is standard library, so nothing was added to the dependency tree.
 - Any future scenario asserting a 4xx or 5xx hits the same wall. When the second one appears,
-  the right move is a small helper in the demo module rather than a second copy of this code —
-  but it is not worth building for one caller.
+  the right move is a small helper rather than a second copy of this code — but it is not worth
+  building for one caller.
+
+  **The second caller appeared in Phase 2**, and not where this record expected. It was not
+  another scenario in the demo module: it was `trident-showcase`, a separate repository testing
+  a completely different application, which wrote its own JDK client for exactly the same
+  reason. Two consumers hand-rolling the same workaround is the framework's problem, not
+  theirs, so `trident-api` now ships `ApiRequest.send(...)`, which returns the status and body
+  whatever the status was. Both projects use it and neither carries an HTTP client of its own.
+
+  It also settled the open question in this record. The behaviour was measured against
+  ParaBank, a plain Python server, and now Conduit — a modern JSON API on a different stack. It
+  is REST Assured's behaviour in this environment, full stop.
 - If a REST Assured release fixes this, the scenario should move back and this ADR should be
   superseded. The measurement table is here so that can be re-checked in minutes.
 

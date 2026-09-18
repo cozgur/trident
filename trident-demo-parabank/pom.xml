@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.ozgurcetintas.trident</groupId>
     <artifactId>trident-parent</artifactId>
-    <version>0.2.2</version>
+    <version>0.2.3</version>
   </parent>
 
   <artifactId>trident-demo-parabank</artifactId>

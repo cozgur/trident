@@ -3,6 +3,8 @@ package dev.ozgurcetintas.trident.demo.parabank.steps;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import dev.ozgurcetintas.trident.api.ApiRequest;
+import dev.ozgurcetintas.trident.api.ApiResponse;
 import dev.ozgurcetintas.trident.core.config.ConfigProvider;
 import dev.ozgurcetintas.trident.core.context.ScenarioContext;
 import dev.ozgurcetintas.trident.demo.parabank.fixtures.CustomerFactory;
@@ -12,14 +14,9 @@ import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import io.restassured.response.Response;
-import java.io.IOException;
 import java.math.BigDecimal;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Banking steps, all operating on accounts this scenario's own customer owns.
@@ -74,38 +71,17 @@ public class BankingSteps {
 
     @When("I log in with the wrong password")
     public void iLogInWithTheWrongPassword() {
-        // Deliberately not REST Assured. Measured in this environment, across REST Assured
-        // 5.5.2 and 6.0.1, with and without an Accept header, and with .then().statusCode(400):
-        // every non-2xx is surfaced by throwing HttpResponseException from the request itself,
-        // so the response never reaches an assertion. It is not a ParaBank quirk — a plain
-        // 400 from a five-line Python server throws the same way.
-        //
-        // The JDK client is used here because this scenario has to assert the status AND the
-        // message, and an assertion on a library's exception text would be a worse test. Every
-        // other step keeps using the framework's request specification.
+        // REST Assured throws on a non-2xx instead of returning it, so a rejection cannot be
+        // asserted through the request specification. ApiRequest is the framework's answer to
+        // that; see docs/adr/0012. This step used to carry its own JDK client, and the showcase
+        // grew a second copy before it moved here.
         ParaBankCustomer me = customer();
-        String url = ConfigProvider.get().apiBaseUrl() + "/parabank/services/bank/login/" + me.username()
-                + "/not-the-password";
-        Duration timeout = Duration.ofSeconds(ConfigProvider.get().defaultTimeoutSeconds());
-        try {
-            HttpResponse<String> response = HttpClient.newBuilder()
-                    // The same timeout the framework's specification applies. Without it a
-                    // server that accepts the connection and never answers stalls the suite
-                    // and delays the container teardown behind it.
-                    .connectTimeout(timeout)
-                    .build()
-                    .send(
-                            HttpRequest.newBuilder(URI.create(url))
-                                    .timeout(timeout)
-                                    .header("Accept", "application/json")
-                                    .GET()
-                                    .build(),
-                            HttpResponse.BodyHandlers.ofString());
-            context.put("rejectedStatus", response.statusCode());
-            context.put("rejectedBody", response.body());
-        } catch (IOException | InterruptedException e) {
-            throw new IllegalStateException("Could not reach ParaBank to attempt a bad login", e);
-        }
+        ApiResponse rejected = ApiRequest.send(
+                ConfigProvider.get(),
+                "GET",
+                "/parabank/services/bank/login/" + me.username() + "/not-the-password",
+                Map.of("Accept", "application/json"));
+        context.put("rejected", rejected);
     }
 
     @When("I transfer {int} from my first account to my second")
@@ -139,10 +115,12 @@ public class BankingSteps {
 
     @Then("the API rejects the login")
     public void theApiRejectsTheLogin() {
+        ApiResponse rejected = context.get("rejected", ApiResponse.class);
+
         // ParaBank gets this one right: a real 400 with a plain-text reason, unlike the
         // registration form and the overdraft below.
-        assertThat(context.get("rejectedStatus", Integer.class)).isEqualTo(400);
-        assertThat(context.get("rejectedBody", String.class)).contains("Invalid username and/or password");
+        assertThat(rejected.statusCode()).isEqualTo(400);
+        assertThat(rejected.body()).contains("Invalid username and/or password");
     }
 
     @Then("the new account belongs to me and is not my first")
