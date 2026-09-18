@@ -13,7 +13,7 @@ every unit can be correct while the product is broken.
 the responses. They tell us the business rules hold: a transfer moves money, a login rejects a
 wrong password. They do not check that anything looks right, and cannot catch a broken button.
 
-**Web tests** (arriving in Phase 3) drive a browser. They tell us a user can complete a
+**Web tests** drive a browser. They tell us a user can complete a
 journey end to end. They are the slowest and most fragile, so we write the fewest of them. The
 rule: if a check can be made at the API layer, it is not a web test.
 

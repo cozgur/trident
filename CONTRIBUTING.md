@@ -69,7 +69,7 @@ a PR with unformatted code fails before anyone reviews it.
 
 Drawing this line is the point of this section. It is a commitment, not a courtesy.
 
-**You will not be asked to maintain locators.** When Phase 3 adds web tests, page objects and
+**You will not be asked to maintain locators.** Page objects and
 selectors belong to whoever owns the suite. If a UI change breaks a selector, that is our
 repair, not a task added to your PR.
 

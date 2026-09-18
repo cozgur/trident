@@ -62,6 +62,7 @@
 
     <!-- Overridden to false only by the deliberately empty placeholder modules. -->
     <trident.javadoc.failOnError>true</trident.javadoc.failOnError>
+    <selenium.version>4.49.0</selenium.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <assertj.version>3.27.3</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
@@ -121,6 +122,11 @@
         <groupId>com.fasterxml.jackson.core</groupId>
         <artifactId>jackson-databind</artifactId>
         <version>${jackson.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.seleniumhq.selenium</groupId>
+        <artifactId>selenium-java</artifactId>
+        <version>${selenium.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
@@ -239,20 +245,26 @@
   </build>
 
   <!--
-    Each profile sets the tag expression and decides which of the two suites runs.
-    trident-runner composes the expression per suite as "@smoke and (${trident.tags})" for
-    Surefire and "@api and (${trident.tags})" for Failsafe, so a suite can never execute the
-    other's scenarios whatever ${trident.tags} happens to be.
+    Each profile sets the tag expression and decides which suite runs. The consumer's POM
+    composes the expression per suite - "@smoke and (${trident.tags})" for Surefire,
+    "@api and (...)" and "@web and (...)" for the two Failsafe executions - so a suite can
+    never execute another's scenarios whatever ${trident.tags} happens to be.
 
-      profile      tags        suite           Docker
-      smoke        @smoke      Surefire only   no    (default; the README quickstart)
-      api          @api        Failsafe only   yes
-      regression   not @wip    Surefire only   no
+      profile      tags        suite                    Docker   browser
+      smoke        @smoke      Surefire only            no       no      (default; the README quickstart)
+      api          @api        Failsafe api-suite       yes      no
+      web          @web        Failsafe web-suite       yes      yes
+      regression   not @wip    Surefire only            no       no
+
+    web is a third profile rather than another tag on api because its preconditions differ: it
+    needs a browser as well as a container, and a machine that has no browser must still be
+    able to run the api suite. It is also what keeps the execution gate able to name the layer
+    that failed, since each suite writes its own message log.
 
     regression is deliberately Surefire-only. It exists so a developer can run the full
     local suite with one command, and making Docker a prerequisite for that would turn it
     into a second api profile. Suite composition already limits "not @wip" to @smoke
-    scenarios on the Surefire side. CI runs smoke and api as separate steps.
+    scenarios on the Surefire side. CI runs smoke, api and web as separate steps.
   -->
   <profiles>
     <profile>
@@ -264,6 +276,7 @@
         <trident.tags>@smoke</trident.tags>
         <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
         <trident.skip.api.suite>true</trident.skip.api.suite>
+        <trident.skip.web.suite>true</trident.skip.web.suite>
       </properties>
     </profile>
     <profile>
@@ -272,6 +285,17 @@
         <trident.tags>@api</trident.tags>
         <trident.skip.smoke.suite>true</trident.skip.smoke.suite>
         <trident.skip.api.suite>false</trident.skip.api.suite>
+        <trident.skip.web.suite>true</trident.skip.web.suite>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>web</id>
+      <properties>
+        <trident.tags>@web</trident.tags>
+        <trident.skip.smoke.suite>true</trident.skip.smoke.suite>
+        <trident.skip.api.suite>true</trident.skip.api.suite>
+        <trident.skip.web.suite>false</trident.skip.web.suite>
       </properties>
     </profile>
     <!--
@@ -368,6 +392,7 @@
         <trident.tags>not @wip</trident.tags>
         <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
         <trident.skip.api.suite>true</trident.skip.api.suite>
+        <trident.skip.web.suite>true</trident.skip.web.suite>
       </properties>
     </profile>
   </profiles>

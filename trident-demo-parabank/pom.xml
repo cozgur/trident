@@ -38,6 +38,12 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-web</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.cucumber</groupId>
@@ -99,6 +105,12 @@
           <!-- A suite class does not match Surefire's default *Test/Test* patterns. -->
           <includes>
             <include>**/*TestSuite.java</include>
+            <!--
+              Ordinary unit tests in this module, which is where the locator policy scanner
+              lives. It reads the page-object sources and needs neither a browser nor a
+              container, so the Docker-free run is the right place for it.
+            -->
+            <include>**/*Test.java</include>
           </includes>
           <failIfNoTests>true</failIfNoTests>
           <skipTests>${trident.skip.smoke.suite}</skipTests>
@@ -139,34 +151,78 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
         <configuration>
-          <includes>
-            <include>**/*IT.java</include>
-          </includes>
           <failIfNoTests>true</failIfNoTests>
-          <skipITs>${trident.skip.api.suite}</skipITs>
           <!--
             Same fixed locale as the smoke suite above, for the same reason.
           -->
           <argLine>-Duser.language=en -Duser.country=US</argLine>
-
-          <systemPropertyVariables>
-            <!-- "@api and (...)": this suite can never execute a @smoke scenario. -->
-            <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
-            <!-- This suite adds the container lifecycle; only it needs Docker. -->
-            <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
-            <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
-          </systemPropertyVariables>
         </configuration>
         <executions>
+          <!--
+            Two executions, not one with two tags. Each suite gets its own includes, its own
+            composed tag expression, its own glue, its own message log and its own reports
+            directory. That last pair is what lets the execution gate say which layer failed:
+            one log per suite, read independently. Sharing either would leave a failure
+            reported against "the integration suite" with no way to tell a locator from an
+            endpoint.
+
+            Each execution also carries its own summaryFile. Failsafe's verify goal reads the
+            summary its integration-test goal wrote, and two executions writing to the default
+            path would have the second overwrite the first.
+          -->
           <execution>
-            <id>integration-test</id>
+            <id>api-suite</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+            <configuration>
+              <includes>
+                <include>**/ParaBankIT.java</include>
+              </includes>
+              <skipITs>${trident.skip.api.suite}</skipITs>
+              <reportsDirectory>${project.build.directory}/failsafe-reports</reportsDirectory>
+              <summaryFile>${project.build.directory}/failsafe-reports/failsafe-summary-api.xml</summaryFile>
+              <systemPropertyVariables>
+                <!-- "@api and (...)": this suite can never execute a @smoke or @web scenario. -->
+                <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
+                <!-- This suite adds the container lifecycle; the smoke suite has no container. -->
+                <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
+                <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
+              </systemPropertyVariables>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>web-suite</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>**/ParaBankWebIT.java</include>
+              </includes>
+              <skipITs>${trident.skip.web.suite}</skipITs>
+              <reportsDirectory>${project.build.directory}/failsafe-web-reports</reportsDirectory>
+              <summaryFile>${project.build.directory}/failsafe-web-reports/failsafe-summary-web.xml</summaryFile>
+              <systemPropertyVariables>
+                <!-- "@web and (...)": this suite can never execute a @smoke or @api scenario. -->
+                <cucumber.filter.tags>@web and (${trident.tags})</cucumber.filter.tags>
+                <!--
+                  The browser lifecycle sits in its own glue package. Cucumber's hooks run for
+                  every glue package a suite loads, so a browser hook on the shared steps path
+                  would open one for the api suite too - the same shape of defect that once
+                  started a container for the Docker-free smoke run.
+                -->
+                <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.websteps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
+                <cucumber.plugin>pretty, summary, message:target/web-cucumber-messages.ndjson</cucumber.plugin>
+              </systemPropertyVariables>
+            </configuration>
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 

@@ -43,8 +43,11 @@ that only works after someone patches the product will not survive a real client
 
 The constraint is self-imposed and kept on purpose. It forces locators built from what the page
 shows — visible text, labels, structural relationships — rather than attributes we wished were
-there. Phase 3 implements that; today there is no web layer, so treat it as the stated rule
-rather than something the repository yet demonstrates.
+there. The web suite now does exactly that, and the strategy, the evidence behind it and the
+test that enforces it are in
+[ADR 0017](adr/0017-locator-strategy-for-an-unmodifiable-ui.md). ParaBank's login form turned
+out to be the hard case: two inputs with no id, no `aria-label`, and labels with no `for`
+attribute, so neither field has an accessible name at all.
 
 ## Isolation without a reset
 

@@ -36,7 +36,11 @@ final class ConfigLoader {
             "timeout.default.seconds",
             "TIMEOUT_DEFAULT_SECONDS",
             "timeout.polling.millis",
-            "TIMEOUT_POLLING_MILLIS");
+            "TIMEOUT_POLLING_MILLIS",
+            "browser",
+            "BROWSER",
+            "browser.headless",
+            "BROWSER_HEADLESS");
 
     private ConfigLoader() {}
 
@@ -62,7 +66,7 @@ final class ConfigLoader {
         return factory.create(TridentConfig.class, fromSystemProperties, fromEnvironmentVariables);
     }
 
-    /** Copies only the five known keys across, ignoring everything else in the JVM. */
+    /** Copies only the seven known keys across, ignoring everything else in the JVM. */
     private static Map<String, String> select(Map<String, String> systemProps) {
         Map<String, String> selected = new HashMap<>();
         for (String propertyKey : PROPERTY_KEYS_TO_ENVIRONMENT_VARIABLES.keySet()) {

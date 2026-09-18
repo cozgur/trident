@@ -31,8 +31,14 @@ public class ParaBankLifecycle {
 
     private static final Logger LOG = LoggerFactory.getLogger(ParaBankLifecycle.class);
 
-    /** Key the container's address is published under, matching TridentConfig's api.base.url. */
+    /**
+     * Keys the container's address is published under. One address, two keys: the REST layer
+     * and the browser talk to the same application, and TridentConfig keeps them separate so a
+     * consumer whose UI and API live on different hosts can say so.
+     */
     private static final String API_BASE_URL_PROPERTY = "api.base.url";
+
+    private static final String WEB_BASE_URL_PROPERTY = "web.base.url";
 
     /** The REST endpoint the @api scenarios use, asked once before any scenario starts. */
     private static final String REST_READINESS_PATH = "/parabank/services/bank/accounts/12345";
@@ -54,6 +60,7 @@ public class ParaBankLifecycle {
         // The alternative, a setter on ConfigProvider, would put knowledge of a container into
         // a published framework module.
         System.setProperty(API_BASE_URL_PROPERTY, container.baseUri());
+        System.setProperty(WEB_BASE_URL_PROPERTY, container.baseUri());
 
         awaitRestApi(container.baseUri());
 
@@ -133,10 +140,10 @@ public class ParaBankLifecycle {
      * inside REST Assured, and every scenario after it repeats the same error, so the log is
      * long and the cause is not in it.
      */
-    @Before("@api")
+    @Before("@api or @web")
     public void requireParaBank() {
         if (container == null || !container.isRunning()) {
-            throw new IllegalStateException("ParaBank is not running, so no @api scenario can pass. "
+            throw new IllegalStateException("ParaBank is not running, so no @api or @web scenario can pass. "
                     + "The suite starts it in @BeforeAll; check the container logs above for why "
                     + "it failed to start, and that Docker is available (docker info).");
         }

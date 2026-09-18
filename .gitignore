@@ -25,3 +25,7 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Written by the execution gates for the job that publishes facts.json. A run's measurements,
+# not a source file.
+evidence/

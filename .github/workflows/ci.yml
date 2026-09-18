@@ -31,12 +31,12 @@ jobs:
       - name: Framework modules know nothing about the target
         run: |
           if grep -riE "parabank|testcontainers|docker" \
-               trident-core/src trident-api/src trident-runner/src \
-               trident-core/pom.xml trident-api/pom.xml trident-runner/pom.xml; then
+               trident-core/src trident-api/src trident-runner/src trident-web/src \
+               trident-core/pom.xml trident-api/pom.xml trident-runner/pom.xml trident-web/pom.xml; then
             echo "FAIL: target-specific reference found in a published module (above)."
             exit 1
           fi
-          echo "OK: no target-specific references in trident-core, trident-api or trident-runner."
+          echo "OK: no target-specific references in the four framework modules."
 
       # Rule: a scenario owns its data and never resets ParaBank underneath another test.
       # It is stated in CONTRIBUTING, in the strategy and in an ADR; this makes it checked.
@@ -72,12 +72,12 @@ jobs:
           # container activity. Strip Maven's transfer lines first, then look for runtime
           # evidence only. A warm cache hid this: the check passed for the wrong reason.
           if grep -vE "^\\[INFO\\] (Downloading|Downloaded|Progress)" smoke.log \
-             | grep -qE "Creating container for image|Ryuk started|ParaBank started|org\\.testcontainers\\.(containers|utility|DockerClientFactory)"; then
-            echo "FAIL: the smoke suite touched a container. Matching lines:"
-            grep -nE "Creating container for image|Ryuk started|ParaBank started|org\\.testcontainers\\." smoke.log | head -20
+             | grep -qE "Creating container for image|Ryuk started|ParaBank started|org\\.testcontainers\\.(containers|utility|DockerClientFactory)|Starting ChromeDriver|Driver started on thread"; then
+            echo "FAIL: the smoke suite touched a container or a browser. Matching lines:"
+            grep -nE "Creating container for image|Ryuk started|ParaBank started|org\\.testcontainers\\.|ChromeDriver|Driver started on thread" smoke.log | head -20
             exit 1
           fi
-          echo "OK: the smoke run shows no container activity."
+          echo "OK: the smoke run shows no container and no browser activity."
           rm -f smoke.log
 
       - name: Build and run the smoke suite
@@ -141,6 +141,27 @@ jobs:
             --messages trident-demo-parabank/target/failsafe-cucumber-messages.ndjson \
             --expect-zero-scenarios
 
+      # The web suite needs a browser as well as a container, which is why it is a third suite
+      # and not a second tag on the api one: a runner without Chrome must still be able to run
+      # everything above. ubuntu-latest ships Chrome, and Selenium Manager resolves the driver.
+      - name: Run the web suite
+        run: ./mvnw -B verify -Pweb
+
+      - name: Scenario-execution gate - web suite
+        run: |
+          python3 .github/scripts/execution-report.py \
+            --reports trident-demo-parabank/target/failsafe-web-reports \
+            --messages trident-demo-parabank/target/web-cucumber-messages.ndjson \
+            --json evidence/web.json
+
+      - name: Negative control - web suite
+        run: |
+          ./mvnw -B verify -Pweb -Dtrident.tags='@nonexistent'
+          python3 .github/scripts/execution-report.py \
+            --reports trident-demo-parabank/target/failsafe-web-reports \
+            --messages trident-demo-parabank/target/web-cucumber-messages.ndjson \
+            --expect-zero-scenarios
+
       - name: Upload test reports
         if: failure()
         uses: actions/upload-artifact@v4
@@ -149,8 +170,10 @@ jobs:
           path: |
             trident-demo-parabank/target/surefire-reports/
             trident-demo-parabank/target/failsafe-reports/
+            trident-demo-parabank/target/failsafe-web-reports/
             trident-demo-parabank/target/cucumber-messages.ndjson
             trident-demo-parabank/target/failsafe-cucumber-messages.ndjson
+            trident-demo-parabank/target/web-cucumber-messages.ndjson
           if-no-files-found: warn
 
       # Both gates wrote their counts above, and both wrote them only after passing. This

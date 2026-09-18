@@ -15,12 +15,33 @@
   <packaging>jar</packaging>
 
   <name>Trident Web</name>
-  <description>Web testing support. Placeholder module.</description>
+  <description>Browser driver lifecycle and the loadable page base, published for consumer projects.</description>
 
-  <properties>
-    <!-- Holds a package-info and no classes, which javadoc refuses to document. Central accepts
-         a placeholder javadoc jar for exactly this case. -->
-    <trident.javadoc.failOnError>false</trident.javadoc.failOnError>
-  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-core</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.seleniumhq.selenium</groupId>
+      <artifactId>selenium-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.assertj</groupId>
+      <artifactId>assertj-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
 
 </project>

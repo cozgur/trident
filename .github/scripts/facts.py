@@ -88,14 +88,14 @@ def read_json(path):
 
 
 def scenario_total(evidence):
-    """Scenarios that the execution gate was willing to pass, across both suites.
+    """Scenarios that the execution gate was willing to pass, across all three suites.
 
-    Summed rather than taken from one file: the smoke suite and the api suite run in separate
-    JVMs under separate plugins and each writes its own message log. A missing suite makes the
-    total unknown rather than smaller — a half-counted total is worse than no number.
+    Summed rather than taken from one file: the smoke, api and web suites run in separate JVMs
+    under separate plugin executions and each writes its own message log. A missing suite makes
+    the total unknown rather than smaller — a half-counted total is worse than no number.
     """
     counts = []
-    for name in ("smoke.json", "api.json"):
+    for name in ("smoke.json", "api.json", "web.json"):
         report = read_json(evidence / name)
         if report is None or report.get("scenarios") is None:
             print(f"  {name}: no scenario count, so the total is not derivable")

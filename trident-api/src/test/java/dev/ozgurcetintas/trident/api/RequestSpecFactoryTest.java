@@ -69,7 +69,7 @@ class RequestSpecFactoryTest {
 
     /**
      * A hand-written stub rather than a loaded configuration: {@code TridentConfig} declares
-     * five methods and nothing else, so implementing it directly keeps these tests independent
+     * seven methods and nothing else, so implementing it directly keeps these tests independent
      * of the property files shipped in trident-core.
      */
     private static TridentConfig config(String apiBaseUrl, long timeoutSeconds) {
@@ -98,6 +98,16 @@ class RequestSpecFactoryTest {
             @Override
             public long pollingMillis() {
                 return 100L;
+            }
+
+            @Override
+            public String browser() {
+                return "chrome";
+            }
+
+            @Override
+            public boolean headless() {
+                return true;
             }
         };
     }

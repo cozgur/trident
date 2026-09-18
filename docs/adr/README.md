@@ -22,6 +22,7 @@ happened, the numbers are in the record.
 | [0014](0014-archetype-before-web-and-mobile.md) | The archetype comes before the web and mobile layers | 2 |
 | [0015](0015-trident-api-ships-a-json-serialiser.md) | trident-api ships a JSON serialiser | 2 |
 | [0016](0016-a-controlled-variable-that-never-varies.md) | A variable held constant across every measurement is invisible | 2 |
+| [0017](0017-locator-strategy-for-an-unmodifiable-ui.md) | Locators for a UI we are not allowed to change | 3 |
 
 ## About 0009
 
@@ -41,4 +42,4 @@ Copy the shape of any existing record: **Status**, **Context**, **Decision**, **
 alternative is not a decision, and the reason an option lost is the part a future reader needs
 when they are about to choose it again.
 
-Number the next one 0017.
+Number the next one 0018.

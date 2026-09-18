@@ -28,6 +28,9 @@ public class CustomerFactory {
     /** Key the created customer is stored under, for steps that need it later. */
     public static final String CONTEXT_KEY = "customer";
 
+    /** ParaBank's account types are ordinals, not names: 0 is CHECKING and 1 is SAVINGS. */
+    private static final int SAVINGS_ACCOUNT_TYPE = 1;
+
     private final ScenarioContext context;
 
     public CustomerFactory(ScenarioContext context) {
@@ -89,6 +92,35 @@ public class CustomerFactory {
         ParaBankCustomer created = new ParaBankCustomer(username, password, customerId, accountId);
         context.put(CONTEXT_KEY, created);
         return created;
+    }
+
+    /**
+     * Opens a second account for a customer this scenario already created.
+     *
+     * <p>Fixture setup, over REST, for the same reason the registration form is: a scenario
+     * about transferring money needs two accounts to exist and should not spend its assertions
+     * proving that opening one works. The scenario that <em>is</em> about opening an account
+     * does it through the browser instead.
+     *
+     * <p>ParaBank moves an opening deposit of $100 out of the funding account. The response
+     * body reports the new account's balance as 0 and the accounts list then reports 100, so
+     * the balance is read from the list rather than from this response.
+     *
+     * @param customer the customer to open it for
+     * @return the new account's number
+     */
+    public int openSecondAccount(ParaBankCustomer customer) {
+        return ParaBankApi.request()
+                .queryParam("customerId", customer.customerId())
+                .queryParam("newAccountType", SAVINGS_ACCOUNT_TYPE)
+                .queryParam("fromAccountId", customer.initialAccountId())
+                .when()
+                .post("/parabank/services/bank/createAccount")
+                .then()
+                .statusCode(200)
+                .extract()
+                .jsonPath()
+                .getInt("id");
     }
 
     /**

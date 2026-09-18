@@ -32,4 +32,18 @@ public interface TridentConfig extends Config {
 
     @Key("timeout.polling.millis")
     long pollingMillis();
+
+    /**
+     * Which browser the web layer drives. Selenium Manager resolves the binary and the driver,
+     * so this is the only thing a consumer has to say.
+     */
+    @Key("browser")
+    String browser();
+
+    /**
+     * Whether that browser runs without a visible window. Defaults to {@code true} because CI
+     * is the common case and a headed run is the exception a developer asks for by name.
+     */
+    @Key("browser.headless")
+    boolean headless();
 }

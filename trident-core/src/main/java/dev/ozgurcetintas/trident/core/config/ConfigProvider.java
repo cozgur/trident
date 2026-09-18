@@ -24,7 +24,7 @@ import java.util.Map;
  * because {@code MERGE} combines the two distinct paths in {@code @Sources}, not two copies of
  * the same path. A partial file leaves the omitted keys unresolved, and reading one throws
  * {@link NullPointerException} rather than returning a default. A consumer replacing
- * {@code config/default.properties} must supply a complete file defining all five keys.
+ * {@code config/default.properties} must supply a complete file defining all seven keys.
  *
  * <p>Resolution happens in two stages. Stage 1 decides the active environment:
  * {@code -Denv}, then the {@code ENV} environment variable, then {@code local}. Stage 2 builds

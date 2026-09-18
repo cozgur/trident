@@ -69,7 +69,7 @@ once before getting right.
 | `trident-bom` | Bill of materials. Consumer projects import this to depend on Trident modules without declaring versions. |
 | `trident-core` | Configuration resolution and the per-scenario context. |
 | `trident-api` | API testing support: request specifications built from configuration. |
-| `trident-web` | Web testing support. Placeholder until Phase 3. |
+| `trident-web` | Browser driver lifecycle and the loadable page base. No locators: those belong to the consumer. |
 | `trident-mobile` | Mobile testing support. Placeholder until Phase 4. |
 | `trident-runner` | Suite base classes and Cucumber lifecycle hooks. Published. |
 | `trident-archetype` | Project archetype. Placeholder until Phase 2. |
@@ -96,9 +96,10 @@ they override one key and leave the rest of the shipped defaults alone:
 WEB_BASE_URL=https://staging.example.com ./mvnw -Psmoke verify
 ```
 
-The five keys and their variables are `env`/`ENV`, `web.base.url`/`WEB_BASE_URL`,
-`api.base.url`/`API_BASE_URL`, `timeout.default.seconds`/`TIMEOUT_DEFAULT_SECONDS` and
-`timeout.polling.millis`/`TIMEOUT_POLLING_MILLIS`.
+The seven keys and their variables are `env`/`ENV`, `web.base.url`/`WEB_BASE_URL`,
+`api.base.url`/`API_BASE_URL`, `timeout.default.seconds`/`TIMEOUT_DEFAULT_SECONDS`,
+`timeout.polling.millis`/`TIMEOUT_POLLING_MILLIS`, `browser`/`BROWSER` and
+`browser.headless`/`BROWSER_HEADLESS`.
 
 ### Overriding with a file
 
@@ -111,7 +112,7 @@ Your copy is earlier on the classpath, so it **shadows** Trident's file rather t
 with it — `MERGE` combines the two distinct source paths, not two copies of the same path. A
 partial file therefore leaves the keys you omitted unresolved, and reading one throws a
 `NullPointerException` rather than returning a default. If you replace
-`config/default.properties`, supply a complete file defining all five keys.
+`config/default.properties`, supply a complete file defining all seven keys.
 
 ## Formatting
 
@@ -126,22 +127,33 @@ the short `spotless:apply` prefix does not resolve across the whole reactor.
 
 ## Running a subset
 
-Three profiles, and only one of them needs Docker.
+Four profiles, and two of them need Docker.
 
-| Profile | Runs | Docker |
-|---|---|---|
-| `smoke` | `@smoke` scenarios under Surefire. Active by default. | no |
-| `api` | `@api` scenarios under Failsafe, against a container. | **yes** |
-| `regression` | everything not tagged `@wip`, on the Surefire side. | no |
+| Profile | Runs | Docker | Browser |
+|---|---|---|---|
+| `smoke` | `@smoke` scenarios under Surefire. Active by default. | no | no |
+| `api` | `@api` scenarios under Failsafe, against a container. | **yes** | no |
+| `web` | `@web` scenarios in a browser, against the same container. | **yes** | **yes** |
+| `regression` | everything not tagged `@wip`, on the Surefire side. | no | no |
 
 ```bash
 ./mvnw -Psmoke verify
 ./mvnw -Papi verify
+./mvnw -Pweb verify
 ./mvnw -Pregression verify
 ```
 
-The quickstart above uses `smoke`, and it stays Docker-free on purpose. Only `-Papi` requires
-Docker.
+The quickstart above uses `smoke`, and it stays Docker-free on purpose. `web` is a profile of
+its own rather than a tag on `api` because its preconditions differ: a machine with Docker but
+no browser can still run everything except `-Pweb`.
+
+`web` drives headless Chrome by default. Selenium Manager resolves the browser and its driver,
+so there is nothing to install. To watch it, or to use a different browser:
+
+```bash
+./mvnw -Pweb verify -Dbrowser.headless=false
+./mvnw -Pweb verify -Dbrowser=firefox
+```
 
 ## Roadmap
 
