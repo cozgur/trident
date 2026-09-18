@@ -20,6 +20,7 @@ happened, the numbers are in the record.
 | [0012](0012-rest-assured-bypassed-for-non-json-error-bodies.md) | The rejection scenario bypasses REST Assured | 1 |
 | [0013](0013-scenario-owned-fixtures.md) | Scenarios own their fixtures | 1 |
 | [0014](0014-archetype-before-web-and-mobile.md) | The archetype comes before the web and mobile layers | 2 |
+| [0015](0015-trident-api-ships-a-json-serialiser.md) | trident-api ships a JSON serialiser | 2 |
 
 ## About 0009
 
@@ -39,4 +40,4 @@ Copy the shape of any existing record: **Status**, **Context**, **Decision**, **
 alternative is not a decision, and the reason an option lost is the part a future reader needs
 when they are about to choose it again.
 
-Number the next one 0015.
+Number the next one 0016.

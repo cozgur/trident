@@ -23,7 +23,7 @@
   -->
   <groupId>dev.ozgurcetintas.trident</groupId>
   <artifactId>trident-bom</artifactId>
-  <version>0.2.1</version>
+  <version>0.2.2</version>
   <packaging>pom</packaging>
 
   <name>Trident BOM</name>

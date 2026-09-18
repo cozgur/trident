@@ -1,6 +1,7 @@
 package dev.ozgurcetintas.trident.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import dev.ozgurcetintas.trident.core.config.TridentConfig;
 import io.restassured.specification.QueryableRequestSpecification;
@@ -48,6 +49,18 @@ class RequestSpecFactoryTest {
         Map<String, ?> secondParams =
                 query(second).getConfig().getHttpClientConfig().params();
         assertThat(secondParams.get("http.socket.timeout")).isEqualTo(20_000);
+    }
+
+    @Test
+    @DisplayName("A JSON serialiser is on the classpath, so a request body can be sent")
+    void shipsAJsonSerialiser() {
+        // Not a tautology. REST Assured needs a JSON provider to serialise a request body and
+        // fails at send time without one - "no JSON serializer found in classpath". The gap
+        // went unnoticed for a whole phase because the only target in this repository receives
+        // form parameters and query parameters, never a JSON body. A consumer found it on
+        // their first POST. This test is what keeps it closed.
+        assertThatCode(() -> Class.forName("com.fasterxml.jackson.databind.ObjectMapper"))
+                .doesNotThrowAnyException();
     }
 
     private static QueryableRequestSpecification query(RequestSpecification spec) {

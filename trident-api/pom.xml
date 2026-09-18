@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.ozgurcetintas.trident</groupId>
     <artifactId>trident-parent</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
   </parent>
 
   <artifactId>trident-api</artifactId>
@@ -26,6 +26,17 @@
     <dependency>
       <groupId>io.rest-assured</groupId>
       <artifactId>rest-assured</artifactId>
+    </dependency>
+    <!--
+      REST Assured can parse a JSON response without help, but it cannot serialise a request
+      body without a JSON provider on the classpath - it fails at send time with "no JSON
+      serializer found in classpath". Shipping one is part of what an API testing module is
+      for; a consumer should not have to discover this from a stack trace on their first POST.
+      See docs/adr/0015-trident-api-ships-a-json-serialiser.md.
+    -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
     </dependency>
 
     <dependency>

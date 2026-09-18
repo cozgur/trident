@@ -7,7 +7,7 @@
 
   <groupId>dev.ozgurcetintas.trident</groupId>
   <artifactId>trident-parent</artifactId>
-  <version>0.2.1</version>
+  <version>0.2.2</version>
   <packaging>pom</packaging>
 
   <name>Trident Parent</name>
@@ -58,6 +58,7 @@
     <cucumber.version>7.22.1</cucumber.version>
     <junit.version>5.12.2</junit.version>
     <rest.assured.version>6.0.1</rest.assured.version>
+    <jackson.version>2.22.2</jackson.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <assertj.version>3.27.3</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
@@ -112,6 +113,11 @@
         <groupId>io.rest-assured</groupId>
         <artifactId>json-schema-validator</artifactId>
         <version>${rest.assured.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.fasterxml.jackson.core</groupId>
+        <artifactId>jackson-databind</artifactId>
+        <version>${jackson.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>
