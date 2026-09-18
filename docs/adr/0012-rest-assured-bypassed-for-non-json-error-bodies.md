@@ -2,8 +2,11 @@
 
 ## Status
 
-Accepted. **Supersedes the original version of this record**, which drew the wrong conclusion
-from correct measurements.
+**Superseded by [ADR 0016](0016-a-controlled-variable-that-never-varies.md).**
+
+This record is kept rather than deleted. Its measurements were accurate and its conclusion was
+wrong, and the gap between those two is the only thing worth remembering about it. What follows
+has been corrected in place; ADR 0016 covers why the original reasoning failed.
 
 ## Context
 
@@ -11,11 +14,23 @@ A scenario asserting that a login with the wrong password is rejected could not 
 response. REST Assured threw `HttpResponseException: status code: 400` from the request itself,
 out of `HTTPBuilder.defaultFailureHandler`, before any assertion ran.
 
-This was measured carefully and the measurements were sound: it happened with and without an
-`Accept` header, with `.then().statusCode(400)`, across REST Assured 5.5.2 and 6.0.1, and
-against a five-line Python server returning an ordinary 400. The conclusion drawn from them was
-that REST Assured surfaces every non-2xx by throwing, and `trident-api` grew a public
-`ApiRequest` class using the JDK HTTP client so that rejections could be asserted at all.
+This was measured carefully, and the measurements were sound. The original table is kept here
+exactly as it was recorded, because it is the evidence that looked convincing:
+
+| attempt | result |
+|---|---|
+| `accept(JSON)`, bare `get()` | throws |
+| `accept(JSON)` + `.then().extract().response()` | throws |
+| `accept(ANY)`, bare `get()` | throws |
+| no `Accept` header at all | throws |
+| `.then().statusCode(400).extract().response()` | throws |
+| REST Assured 5.5.2 → 6.0.1 | throws |
+| **a plain `400` from a five-line Python server** | **throws** |
+
+The last row was treated as decisive — an independent server, no application under test, same
+result — so the conclusion drawn was that REST Assured surfaces every non-2xx by throwing.
+`trident-api` grew a public `ApiRequest` class using the JDK HTTP client so that rejections
+could be asserted at all.
 
 **The conclusion was wrong.** Every one of those measurements was taken on the same machine,
 and the variable that mattered was never changed. Holding the request identical and varying only
