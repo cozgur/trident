@@ -174,6 +174,21 @@ ParaBank lives entirely in `trident-demo-parabank`. No framework module referenc
 proves that with a grep over `trident-core`, `trident-api` and `trident-runner`. See
 [working with a legacy application](docs/working-with-legacy.md) for what that choice implies.
 
+### A second target
+
+[`cozgur/trident-showcase`](https://github.com/cozgur/trident-showcase) is a separate
+repository that consumes Trident from Maven Central and tests
+[Conduit](https://realworld-docs.netlify.app), the RealWorld reference API — modern JSON REST
+and JWT where ParaBank is JSP and session cookies. It was generated from `trident-archetype`,
+not hand-written, and it exists to answer one question: does the framework work on a target it
+was not developed against?
+
+Mostly. It found two gaps, both fixed in Trident rather than worked around there: `trident-api`
+could not serialise a JSON request body ([ADR 0015](docs/adr/0015-trident-api-ships-a-json-serialiser.md)),
+and asserting a rejection needed an HTTP client the framework did not provide
+([ADR 0012](docs/adr/0012-rest-assured-bypassed-for-non-json-error-bodies.md)). The
+authentication scheme needed nothing — which was the decision under test.
+
 It runs in a container, so **`-Papi` needs Docker**. The quickstart does not: `-Psmoke` never
 starts a container, and CI proves that too, by running the smoke suite with `DOCKER_HOST`
 pointing at a socket that does not exist.
