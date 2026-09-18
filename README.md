@@ -162,7 +162,7 @@ so there is nothing to install. To watch it, or to use a different browser:
 | 0 | Build skeleton and runner wiring — sealed at v0.1.0 |
 | 1 | `trident-api` + `trident-demo-parabank`, ParaBank via Testcontainers, failsafe bound — **done** |
 | 2 | `trident-archetype`, Maven Central publish, and `trident-showcase` — a **separate repository**, not a module here, consuming Trident from Maven Central against a target unrelated to ParaBank |
-| 3 | `trident-web` (Selenium 4), parallel execution, Allure |
+| 3 | `trident-web` (Selenium 4) — **CP 3.1 done**, parallel execution — **CP 3.2 done**, Allure — CP 3.3. **Open gap:** the archetype does not yet generate a web suite. A generated project gets `trident-web` on its classpath and the `browser` config keys, but no suite class, profile or page-object example — so the layer exists and Phase 2's claim that a new application needs only a generated project does not yet cover it. CP 3.3 closes this. |
 | 4 | `trident-mobile` (Appium 3 server / java-client 10) |
 | 5 | Documentation package and portfolio case study |
 

@@ -23,6 +23,39 @@
       project looks like, so publishing it would invite someone to depend on a demo.
     -->
     <maven.deploy.skip>true</maven.deploy.skip>
+
+    <!--
+      Parallel execution, per suite. These are Maven properties rather than entries in
+      junit-platform.properties because that file is shared by all three suites and they do not
+      agree: the smoke suite is pinned single-threaded below, and the two integration suites run
+      concurrently. A consumer project with one file per project puts these in
+      junit-platform.properties instead, which is what the archetype generates.
+
+      OFF, and by measurement rather than by caution. ParaBank cannot create two rows at once:
+      concurrent registrations collide on a generated primary key and the application reports
+      it as "This username already exists" for a name that does not. Measured at scenario level
+      with four threads, the web suite passed 1 run in 20 and the api suite 0 in 20, and no
+      thread count was faster than running serially. The full evidence, including a
+      reproduction with curl and no Trident in it, is in
+      docs/adr/0018-parallel-execution-at-scenario-level.md.
+
+      Nothing below is dead. Flip enabled to true against a target that can take concurrency
+      and the suites run at scenario level; it is one word, and it is left wired precisely so
+      that the next target does not have to rediscover the wiring.
+
+      Try it for yourself without editing anything:
+        ./mvnw -Pweb verify -Dtrident.parallel.enabled=true
+        ./mvnw -Papi verify -Dtrident.parallel.enabled=true -Dtrident.parallel.threads=8
+    -->
+    <trident.parallel.enabled>false</trident.parallel.enabled>
+    <trident.parallel.strategy>fixed</trident.parallel.strategy>
+    <trident.parallel.threads>4</trident.parallel.threads>
+    <trident.parallel.factor>0.5</trident.parallel.factor>
+    <!--
+      concurrent keeps every scenario independent, which is scenario-level parallelism.
+      same_thread pins all scenarios of one feature file to one thread, which is feature level.
+    -->
+    <trident.parallel.featuremode>concurrent</trident.parallel.featuremode>
   </properties>
 
   <dependencies>
@@ -143,6 +176,12 @@
             <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps</cucumber.glue>
             <!-- Each suite writes its own message log; see junit-platform.properties. -->
             <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson</cucumber.plugin>
+            <!--
+              Pinned single-threaded, and not by omission. One scenario gains nothing from
+              concurrency, and the quickstart's promise is that the fast run is the simple one:
+              if it ever fails, nothing about threads is among the reasons.
+            -->
+            <cucumber.execution.parallel.enabled>false</cucumber.execution.parallel.enabled>
           </systemPropertyVariables>
         </configuration>
       </plugin>
@@ -189,6 +228,17 @@
                 <!-- This suite adds the container lifecycle; the smoke suite has no container. -->
                 <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
                 <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
+                <!--
+                  Scenario level, which is the engine's default once parallelism is on: each
+                  pickle is a test. Feature level would serialise the eight scenarios of one
+                  file behind each other, which is most of this suite.
+                -->
+                <cucumber.execution.parallel.enabled>${trident.parallel.enabled}</cucumber.execution.parallel.enabled>
+                <cucumber.execution.parallel.config.strategy>${trident.parallel.strategy}</cucumber.execution.parallel.config.strategy>
+                <cucumber.execution.parallel.config.fixed.parallelism>${trident.parallel.threads}</cucumber.execution.parallel.config.fixed.parallelism>
+                <cucumber.execution.parallel.config.fixed.max-pool-size>${trident.parallel.threads}</cucumber.execution.parallel.config.fixed.max-pool-size>
+                <cucumber.execution.parallel.config.dynamic.factor>${trident.parallel.factor}</cucumber.execution.parallel.config.dynamic.factor>
+                <cucumber.execution.execution-mode.feature>${trident.parallel.featuremode}</cucumber.execution.execution-mode.feature>
               </systemPropertyVariables>
             </configuration>
           </execution>
@@ -217,6 +267,17 @@
                 -->
                 <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.websteps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
                 <cucumber.plugin>pretty, summary, message:target/web-cucumber-messages.ndjson</cucumber.plugin>
+                <!--
+                  Scenario level, which is the engine's default once parallelism is on: each
+                  pickle is a test. Feature level would serialise the eight scenarios of one
+                  file behind each other, which is most of this suite.
+                -->
+                <cucumber.execution.parallel.enabled>${trident.parallel.enabled}</cucumber.execution.parallel.enabled>
+                <cucumber.execution.parallel.config.strategy>${trident.parallel.strategy}</cucumber.execution.parallel.config.strategy>
+                <cucumber.execution.parallel.config.fixed.parallelism>${trident.parallel.threads}</cucumber.execution.parallel.config.fixed.parallelism>
+                <cucumber.execution.parallel.config.fixed.max-pool-size>${trident.parallel.threads}</cucumber.execution.parallel.config.fixed.max-pool-size>
+                <cucumber.execution.parallel.config.dynamic.factor>${trident.parallel.factor}</cucumber.execution.parallel.config.dynamic.factor>
+                <cucumber.execution.execution-mode.feature>${trident.parallel.featuremode}</cucumber.execution.execution-mode.feature>
               </systemPropertyVariables>
             </configuration>
           </execution>

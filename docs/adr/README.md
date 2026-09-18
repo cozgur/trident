@@ -10,7 +10,7 @@ happened, the numbers are in the record.
 | [0002](0002-cucumber-with-junit5-platform.md) | Cucumber on the JUnit 5 Platform | 0 |
 | [0003](0003-picocontainer-for-step-scope.md) | Picocontainer for step-definition scope | 0 |
 | [0004](0004-two-stage-config-resolution.md) | Two-stage configuration resolution | 0 |
-| [0005](0005-defer-parallel-execution.md) | Defer parallel execution | 0 |
+| [0005](0005-defer-parallel-execution.md) | Defer parallel execution — resolved by 0018 | 0 |
 | [0006](0006-standalone-bom.md) | `trident-bom` is a standalone POM | 0 |
 | [0007](0007-pinning-surefire-and-verifying-execution.md) | Pin Surefire and verify execution independently of the build's exit code | 0 |
 | [0008](0008-framework-modules-know-no-target.md) | Framework modules know no target application | 1 |
@@ -23,6 +23,7 @@ happened, the numbers are in the record.
 | [0015](0015-trident-api-ships-a-json-serialiser.md) | trident-api ships a JSON serialiser | 2 |
 | [0016](0016-a-controlled-variable-that-never-varies.md) | A variable held constant across every measurement is invisible | 2 |
 | [0017](0017-locator-strategy-for-an-unmodifiable-ui.md) | Locators for a UI we are not allowed to change | 3 |
+| [0018](0018-parallel-execution-at-scenario-level.md) | Parallel execution: the suite was ready, the application was not | 3 |
 
 ## About 0009
 
@@ -42,4 +43,4 @@ Copy the shape of any existing record: **Status**, **Context**, **Decision**, **
 alternative is not a decision, and the reason an option lost is the part a future reader needs
 when they are about to choose it again.
 
-Number the next one 0018.
+Number the next one 0019.

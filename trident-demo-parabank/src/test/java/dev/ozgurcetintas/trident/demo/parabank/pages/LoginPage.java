@@ -80,7 +80,23 @@ public final class LoginPage extends LoadablePage {
     public void logInAs(String username, String password) {
         usernameField().sendKeys(username);
         passwordField().sendKeys(password);
-        clickable(LOG_IN).click();
+        WebElement submit = clickable(LOG_IN);
+        submit.click();
+
+        // The click starts a navigation, and click() returns before it finishes. Without this
+        // wait the step returns while the login POST is still in flight, and the next step's
+        // driver.get() races it: the browser asks for one page, the login response arrives
+        // afterwards, and the scenario ends up somewhere it never navigated to.
+        //
+        // That is not theoretical. Measured across 24 runs before this line existed, the
+        // scenario that opens an account - the only one that navigates somewhere other than
+        // where login lands - failed with the browser reporting overview.htm while waiting for
+        // a control on openaccount.htm. The transfer scenario hid the same race, because it
+        // navigates to overview.htm, which is where the late login response was going anyway.
+        //
+        // Waiting for the clicked button to go stale is the page-agnostic form of "the
+        // navigation completed": it holds for the account overview and for the error page.
+        waiter().until(ExpectedConditions.stalenessOf(submit));
     }
 
     /**

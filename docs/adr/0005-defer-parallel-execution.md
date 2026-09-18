@@ -2,7 +2,12 @@
 
 ## Status
 
-Accepted.
+Accepted, and **resolved by [ADR 0018](0018-parallel-execution-at-scenario-level.md)**.
+
+The deferral did its job. Phase 3 enabled parallel execution, measured it, and found that the
+suite was ready and the application under test was not — which is a finding this record could
+not have produced and a cost that would have been paid in flaky builds had it been switched on
+in Phase 0.
 
 ## Context
 
