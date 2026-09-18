@@ -3,9 +3,6 @@ package dev.ozgurcetintas.trident.demo.parabank.steps;
 import static io.restassured.module.jsv.JsonSchemaValidator.matchesJsonSchemaInClasspath;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import dev.ozgurcetintas.trident.api.ApiRequest;
-import dev.ozgurcetintas.trident.api.ApiResponse;
-import dev.ozgurcetintas.trident.core.config.ConfigProvider;
 import dev.ozgurcetintas.trident.core.context.ScenarioContext;
 import dev.ozgurcetintas.trident.demo.parabank.fixtures.CustomerFactory;
 import dev.ozgurcetintas.trident.demo.parabank.fixtures.ParaBankApi;
@@ -16,7 +13,6 @@ import io.cucumber.java.en.When;
 import io.restassured.response.Response;
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Banking steps, all operating on accounts this scenario's own customer owns.
@@ -28,6 +24,7 @@ import java.util.Map;
 public class BankingSteps {
 
     private static final String SECOND_ACCOUNT = "secondAccountId";
+    private static final String RESPONSE_KEY = "loginResponse";
     private static final String BALANCE_BEFORE_FIRST = "balanceBeforeFirst";
     private static final String BALANCE_BEFORE_SECOND = "balanceBeforeSecond";
 
@@ -66,22 +63,12 @@ public class BankingSteps {
     @When("I log in with my own credentials")
     public void iLogInWithMyOwnCredentials() {
         ParaBankCustomer me = customer();
-        context.put("loginResponse", login(me.username(), me.password()));
+        context.put(RESPONSE_KEY, login(me.username(), me.password()));
     }
 
     @When("I log in with the wrong password")
     public void iLogInWithTheWrongPassword() {
-        // REST Assured throws on a non-2xx instead of returning it, so a rejection cannot be
-        // asserted through the request specification. ApiRequest is the framework's answer to
-        // that; see docs/adr/0012. This step used to carry its own JDK client, and the showcase
-        // grew a second copy before it moved here.
-        ParaBankCustomer me = customer();
-        ApiResponse rejected = ApiRequest.send(
-                ConfigProvider.get(),
-                "GET",
-                "/parabank/services/bank/login/" + me.username() + "/not-the-password",
-                Map.of("Accept", "application/json"));
-        context.put("rejected", rejected);
+        context.put(RESPONSE_KEY, login(customer().username(), "not-the-password"));
     }
 
     @When("I transfer {int} from my first account to my second")
@@ -106,7 +93,7 @@ public class BankingSteps {
     @Then("the API returns my customer record")
     public void theApiReturnsMyCustomerRecord() {
         ParaBankCustomer me = customer();
-        Response response = context.get("loginResponse", Response.class);
+        Response response = context.get(RESPONSE_KEY, Response.class);
 
         assertThat(response.statusCode()).isEqualTo(200);
         assertThat(response.jsonPath().getInt("id")).isEqualTo(me.customerId());
@@ -115,12 +102,12 @@ public class BankingSteps {
 
     @Then("the API rejects the login")
     public void theApiRejectsTheLogin() {
-        ApiResponse rejected = context.get("rejected", ApiResponse.class);
+        Response rejected = context.get(RESPONSE_KEY, Response.class);
 
         // ParaBank gets this one right: a real 400 with a plain-text reason, unlike the
         // registration form and the overdraft below.
         assertThat(rejected.statusCode()).isEqualTo(400);
-        assertThat(rejected.body()).contains("Invalid username and/or password");
+        assertThat(rejected.asString()).contains("Invalid username and/or password");
     }
 
     @Then("the new account belongs to me and is not my first")

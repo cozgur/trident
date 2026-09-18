@@ -31,6 +31,22 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
+      # Maven Central is immutable, so the cheapest possible check runs first: does the tag
+      # actually name the version about to be published? Nothing else in the pipeline compares
+      # them, and the version is bumped by hand.
+      - name: Tag must match the project version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          PARENT=$(./mvnw -q -DforceStdout help:evaluate -Dexpression=project.version)
+          BOM=$(./mvnw -q -DforceStdout -pl trident-bom help:evaluate -Dexpression=project.version)
+          echo "tag=$TAG parent=$PARENT bom=$BOM"
+          if [ "$TAG" != "$PARENT" ] || [ "$TAG" != "$BOM" ]; then
+            echo "FAIL: tag $TAG does not match parent $PARENT / bom $BOM."
+            echo "Run: ./mvnw versions:set -DnewVersion=$TAG -DprocessAllModules=true"
+            exit 1
+          fi
+          echo "OK: tag, parent and BOM all say $TAG."
+
       # The same checks main gets. A tag is not a reason to publish something that would have
       # failed on a branch.
       - name: Framework modules know nothing about the target
@@ -54,6 +70,12 @@ jobs:
 
       - name: Run the api suite
         run: ./mvnw -B verify -Papi
+
+      - name: Scenario-execution gate - api suite
+        run: |
+          python3 .github/scripts/execution-report.py \
+            --reports trident-demo-parabank/target/failsafe-reports \
+            --messages trident-demo-parabank/target/failsafe-cucumber-messages.ndjson
 
       - name: Publish
         env:

@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.ozgurcetintas.trident</groupId>
     <artifactId>trident-parent</artifactId>
-    <version>0.2.3</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>trident-demo-parabank</artifactId>
@@ -102,6 +102,17 @@
           </includes>
           <failIfNoTests>true</failIfNoTests>
           <skipTests>${trident.skip.smoke.suite}</skipTests>
+          <!--
+            Tests run in a fixed locale. This is ordinary hygiene - a suite whose result depends
+            on the developer's locale is not a suite - and here it is load-bearing: REST Assured
+            lowercases its internal "FAILURE" handler key without a locale, so under tr_TR it
+            looks up "faılure", finds nothing, and throws on every non-2xx instead of returning
+            it. Measured: the same 400 returns normally under en_US and throws under tr_TR.
+            It must be an argLine, not a systemPropertyVariable: Locale.getDefault() is fixed at
+            JVM start.
+          -->
+          <argLine>-Duser.language=en -Duser.country=US</argLine>
+
           <systemPropertyVariables>
             <!--
               Maven project properties are not visible to the forked test JVM. Forwarding
@@ -133,6 +144,11 @@
           </includes>
           <failIfNoTests>true</failIfNoTests>
           <skipITs>${trident.skip.api.suite}</skipITs>
+          <!--
+            Same fixed locale as the smoke suite above, for the same reason.
+          -->
+          <argLine>-Duser.language=en -Duser.country=US</argLine>
+
           <systemPropertyVariables>
             <!-- "@api and (...)": this suite can never execute a @smoke scenario. -->
             <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>

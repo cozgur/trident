@@ -17,7 +17,7 @@ happened, the numbers are in the record.
 | — | *0009 was planned and never written* | — |
 | [0010](0010-two-suites-surefire-and-failsafe.md) | Two suites: Surefire for smoke, Failsafe for API | 1 |
 | [0011](0011-readiness-probe-triggers-schema-init.md) | The readiness probe targets the home page, not the layer under test | 1 |
-| [0012](0012-rest-assured-bypassed-for-non-json-error-bodies.md) | The rejection scenario bypasses REST Assured | 1 |
+| [0012](0012-rest-assured-bypassed-for-non-json-error-bodies.md) | REST Assured was never the problem: the locale was | 1 |
 | [0013](0013-scenario-owned-fixtures.md) | Scenarios own their fixtures | 1 |
 | [0014](0014-archetype-before-web-and-mobile.md) | The archetype comes before the web and mobile layers | 2 |
 | [0015](0015-trident-api-ships-a-json-serialiser.md) | trident-api ships a JSON serialiser | 2 |

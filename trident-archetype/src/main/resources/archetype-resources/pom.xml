@@ -19,6 +19,7 @@
     <assertj.version>3.27.3</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
 
+    <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
     <maven.surefire.plugin.version>3.5.6</maven.surefire.plugin.version>
     <maven.failsafe.plugin.version>3.5.6</maven.failsafe.plugin.version>
   </properties>
@@ -93,6 +94,18 @@
 
   <build>
     <plugins>
+      <!--
+        Pinned, not inherited from whatever Maven happens to default to. Maven 3.6's default
+        compiler plugin is 3.1, which does not understand maven.compiler.release and fails
+        asking for Java 5. Nothing about this project should depend on which Maven the reader
+        has installed.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven.compiler.plugin.version}</version>
+      </plugin>
+
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -104,6 +117,17 @@
           </includes>
           <failIfNoTests>true</failIfNoTests>
           <skipTests>${trident.skip.smoke.suite}</skipTests>
+          <!--
+            Tests run in a fixed locale. This is ordinary hygiene - a suite whose result depends
+            on the developer's locale is not a suite - and here it is load-bearing: REST Assured
+            lowercases its internal "FAILURE" handler key without a locale, so under tr_TR it
+            looks up "faılure", finds nothing, and throws on every non-2xx instead of returning
+            it. Measured: the same 400 returns normally under en_US and throws under tr_TR.
+            It must be an argLine, not a systemPropertyVariable: Locale.getDefault() is fixed at
+            JVM start.
+          -->
+          <argLine>-Duser.language=en -Duser.country=US</argLine>
+
           <systemPropertyVariables>
             <!--
               Maven project properties are not visible to the forked test JVM, so they are
@@ -133,6 +157,17 @@
           </includes>
           <failIfNoTests>true</failIfNoTests>
           <skipITs>${trident.skip.api.suite}</skipITs>
+          <!--
+            Tests run in a fixed locale. This is ordinary hygiene - a suite whose result depends
+            on the developer's locale is not a suite - and here it is load-bearing: REST Assured
+            lowercases its internal "FAILURE" handler key without a locale, so under tr_TR it
+            looks up "faılure", finds nothing, and throws on every non-2xx instead of returning
+            it. Measured: the same 400 returns normally under en_US and throws under tr_TR.
+            It must be an argLine, not a systemPropertyVariable: Locale.getDefault() is fixed at
+            JVM start.
+          -->
+          <argLine>-Duser.language=en -Duser.country=US</argLine>
+
           <systemPropertyVariables>
             <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
             <!-- Add your support package here when it holds glue, such as a container. -->

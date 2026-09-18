@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.ozgurcetintas.trident</groupId>
     <artifactId>trident-parent</artifactId>
-    <version>0.2.3</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>trident-api</artifactId>

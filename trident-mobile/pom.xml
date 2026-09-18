@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.ozgurcetintas.trident</groupId>
     <artifactId>trident-parent</artifactId>
-    <version>0.2.3</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>trident-mobile</artifactId>
@@ -16,5 +16,11 @@
 
   <name>Trident Mobile</name>
   <description>Mobile testing support. Placeholder module.</description>
+
+  <properties>
+    <!-- Holds a package-info and no classes, which javadoc refuses to document. Central accepts
+         a placeholder javadoc jar for exactly this case. -->
+    <trident.javadoc.failOnError>false</trident.javadoc.failOnError>
+  </properties>
 
 </project>

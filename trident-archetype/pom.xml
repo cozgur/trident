@@ -8,7 +8,7 @@
   <parent>
     <groupId>dev.ozgurcetintas.trident</groupId>
     <artifactId>trident-parent</artifactId>
-    <version>0.2.3</version>
+    <version>1.0.0</version>
   </parent>
 
   <artifactId>trident-archetype</artifactId>
@@ -20,6 +20,7 @@
   <properties>
     <!-- @ only: ${...} belongs to Velocity in archetype-resources. -->
     <maven.resources.delimiters>@</maven.resources.delimiters>
+    <trident.skip.archetype.it>true</trident.skip.archetype.it>
   </properties>
 
   <build>
@@ -45,6 +46,27 @@
         </excludes>
       </resource>
     </resources>
+
+    <plugins>
+      <!--
+        Generates a project from this archetype and runs `verify` on it, on every build. This is
+        the continuous proof of the claim the archetype exists to make - that a generated
+        project works with no editing - and it runs with parameters deliberately unlike the ones
+        used while writing the template.
+
+        Skipped by default, because the generated project resolves Trident from the local
+        repository and `verify` runs before `install` has put this version there. CI installs
+        first and then runs it with -Dtrident.skip.archetype.it=false, which is the only order
+        in which it can mean anything.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-archetype-plugin</artifactId>
+        <configuration>
+          <skip>${trident.skip.archetype.it}</skip>
+        </configuration>
+      </plugin>
+    </plugins>
 
     <extensions>
       <extension>

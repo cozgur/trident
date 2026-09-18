@@ -7,7 +7,7 @@
 
   <groupId>dev.ozgurcetintas.trident</groupId>
   <artifactId>trident-parent</artifactId>
-  <version>0.2.3</version>
+  <version>1.0.0</version>
   <packaging>pom</packaging>
 
   <name>Trident Parent</name>
@@ -59,6 +59,9 @@
     <junit.version>5.12.2</junit.version>
     <rest.assured.version>6.0.1</rest.assured.version>
     <jackson.version>2.22.2</jackson.version>
+
+    <!-- Overridden to false only by the deliberately empty placeholder modules. -->
+    <trident.javadoc.failOnError>true</trident.javadoc.failOnError>
     <testcontainers.version>2.0.5</testcontainers.version>
     <assertj.version>3.27.3</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
@@ -300,14 +303,11 @@
             <version>${maven.javadoc.plugin.version}</version>
             <configuration>
               <!--
-                trident-web and trident-mobile are placeholders holding a package-info and
-                nothing else, and javadoc refuses that outright: "No public or protected classes
-                found to document". Central accepts a placeholder javadoc jar for exactly this
-                case, so the jar is still attached and the build does not stop. A module with
-                real classes still fails here if its javadoc is broken, which is the behaviour
-                worth keeping.
+                Set per module, not here. The placeholder modules need failOnError=false because
+                javadoc refuses a package-info with no classes; every other module must still
+                fail on broken javadoc, and setting it globally quietly gave up that check.
               -->
-              <failOnError>false</failOnError>
+              <failOnError>${trident.javadoc.failOnError}</failOnError>
             </configuration>
             <executions>
               <execution>

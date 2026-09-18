@@ -6,8 +6,14 @@
 
   <requiredProperties>
     <!-- Names the generated suite classes: <prefix>TestSuite and <prefix>IT. -->
+    <!--
+      The prefix becomes a Java class name, so it must be a valid identifier. Without this,
+      -Dprefix=My-Api generates happily and then fails to compile on `class My-ApiIT`, which is
+      a confusing way to learn about the constraint.
+    -->
     <requiredProperty key="prefix">
       <defaultValue>Example</defaultValue>
+      <validationRegex>^[A-Z][A-Za-z0-9_]*$</validationRegex>
     </requiredProperty>
     <!--
       The Trident release the generated project resolves. The default is filtered in from this

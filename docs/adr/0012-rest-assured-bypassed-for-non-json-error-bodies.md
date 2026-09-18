@@ -1,89 +1,79 @@
-# 12. The rejection scenario bypasses REST Assured
+# 12. REST Assured was never the problem: the locale was
 
 ## Status
 
-Accepted.
+Accepted. **Supersedes the original version of this record**, which drew the wrong conclusion
+from correct measurements.
 
 ## Context
 
-One `@api` scenario asserts that a login with the wrong password is rejected. ParaBank answers
-it correctly: `400`, `Content-Type: text/plain`, body `Invalid username and/or password`. The
-scenario should assert both the status and the message.
+A scenario asserting that a login with the wrong password is rejected could not read the
+response. REST Assured threw `HttpResponseException: status code: 400` from the request itself,
+out of `HTTPBuilder.defaultFailureHandler`, before any assertion ran.
 
-It could not. REST Assured never returned the response — it threw
-`io.restassured.internal.http.HttpResponseException: status code: 400` from the request itself,
-out of `HTTPBuilder.defaultFailureHandler`, before any assertion could run.
+This was measured carefully and the measurements were sound: it happened with and without an
+`Accept` header, with `.then().statusCode(400)`, across REST Assured 5.5.2 and 6.0.1, and
+against a five-line Python server returning an ordinary 400. The conclusion drawn from them was
+that REST Assured surfaces every non-2xx by throwing, and `trident-api` grew a public
+`ApiRequest` class using the JDK HTTP client so that rejections could be asserted at all.
 
-That is not REST Assured's documented behaviour, so it was measured rather than assumed:
+**The conclusion was wrong.** Every one of those measurements was taken on the same machine,
+and the variable that mattered was never changed. Holding the request identical and varying only
+the JVM locale:
 
-| attempt | result |
+| locale | result |
 |---|---|
-| `accept(JSON)`, bare `get()` | throws |
-| `accept(JSON)` + `.then().extract().response()` | throws |
-| `accept(ANY)`, bare `get()` | throws |
-| no `Accept` header at all | throws |
-| `.then().statusCode(400).extract().response()` | throws |
-| REST Assured 5.5.2 → 6.0.1 | throws |
-| **a plain `400` from a five-line Python server** | **throws** |
+| `tr_TR` | throws `HttpResponseException` |
+| `en_US` | returns status 400 and the body |
 
-The last row is the one that settles it. The response had a normal reason phrase, a
-`Content-Length`, and `text/plain` — nothing unusual — and REST Assured threw identically. So
-this is not a ParaBank quirk, not a content-type problem, and not fixed by the current version.
-Every non-2xx in this environment arrives as an exception.
+REST Assured lowercases its internal handler key without specifying a locale. Under Turkish
+rules `I` lowercases to the dotless `ı`, so `FAILURE` becomes `faılure`, the registered failure
+handler is never found, and the default one throws. It is the same defect this project had
+already hit once, in the Central publishing plugin, whose error message printed
+`[uploaded, valıdated, publıshed]` — and the connection was not made.
+
+CI never saw any of it, because CI runs under a neutral locale.
 
 ## Decision
 
-That one step issues its request with the JDK's `java.net.http.HttpClient`, records the status
-and body in the scenario context, and the assertion step reads both from there.
+Tests run in a fixed locale. Both plugin blocks — in the reference implementation and in the
+project the archetype generates — carry:
 
-Every other request in the suite goes through `ParaBankApi`, which is built from the
-framework's `RequestSpecFactory` — including the HTML registration form, which needs a
-different content type but the same base URI and timeouts. The bypass is one step wide and
-commented at the line, with the measurements above summarised, so nobody "simplifies" it back.
+```xml
+<argLine>-Duser.language=en -Duser.country=US</argLine>
+```
 
-That was not true when this record was first written. A pre-tag review found six call sites in
-`CustomerFactory` and `CustomerSteps` still using a bare `given()`, quietly opting out of the
-configured timeouts and the failure logging while this ADR claimed otherwise. They were routed
-through `ParaBankApi`, and the JDK client in the bypass gained the same timeout, which it had
-been missing.
+It must be an `argLine` rather than a `systemPropertyVariable`: `Locale.getDefault()` is fixed
+when the JVM starts.
+
+`ApiRequest` and `ApiResponse` are **removed**. Both consumers assert rejections through the
+ordinary request specification, which is what it was always able to do.
 
 ## Consequences
 
-- The scenario asserts what it was written to assert: status `400` and the message text.
-- One step in the suite does not exercise the framework's request specification. That is a real
-  loss and the reason this is scoped to a single step rather than adopted as a pattern. It
-  carries the configured timeout explicitly so that it does not also opt out of that.
-- The JDK client is standard library, so nothing was added to the dependency tree.
-- Any future scenario asserting a 4xx or 5xx hits the same wall. When the second one appears,
-  the right move is a small helper rather than a second copy of this code — but it is not worth
-  building for one caller.
-
-  **The second caller appeared in Phase 2**, and not where this record expected. It was not
-  another scenario in the demo module: it was `trident-showcase`, a separate repository testing
-  a completely different application, which wrote its own JDK client for exactly the same
-  reason. Two consumers hand-rolling the same workaround is the framework's problem, not
-  theirs, so `trident-api` now ships `ApiRequest.send(...)`, which returns the status and body
-  whatever the status was. Both projects use it and neither carries an HTTP client of its own.
-
-  It also settled the open question in this record. The behaviour was measured against
-  ParaBank, a plain Python server, and now Conduit — a modern JSON API on a different stack. It
-  is REST Assured's behaviour in this environment, full stop.
-- If a REST Assured release fixes this, the scenario should move back and this ADR should be
-  superseded. The measurement table is here so that can be re-checked in minutes.
+- There is one way to make a request, not two. A public class that existed only to work around
+  one machine's locale is gone before 1.0 froze it.
+- Suites no longer depend on the developer's locale, which is worth having on its own. A test
+  that passes in Istanbul and fails in Berlin is not a test.
+- A consumer on a Turkish-locale machine who adds `trident-api` to an existing project, rather
+  than generating from the archetype, will hit the underlying REST Assured bug. We cannot fix
+  their build; the archetype sets the locale for everyone who starts from it.
+- The lesson is about method, not about locales: **a variable that is constant across all of
+  your measurements is not controlled for, it is invisible.** Five configurations, two library
+  versions and an independent server all agreed — and all ran on one machine. The agreement felt
+  like convergent evidence and was a single untested assumption repeated five times.
 
 ## Alternatives rejected
 
-**Assert on the thrown exception.** `assertThatThrownBy(...).hasMessageContaining("status code:
-400")` keeps everything inside REST Assured and is three lines shorter. Rejected because it
-asserts on a library's exception text — a string the library is free to change in a patch
-release — and because it cannot reach the body at all, so the scenario would silently stop
-checking that ParaBank says *why* it rejected the login.
+**Keep `ApiRequest` as well, since it works.** It does work, and it would spare anyone on a
+Turkish machine. Rejected because it is public API bought with a misdiagnosis: two ways to make
+a request, one of which cannot send a body or read headers, maintained forever to paper over a
+bug in someone else's library on one developer's laptop.
 
-**Drop the status-code assertion and check only that the call failed.** Simplest of all.
-Rejected because "it threw" is true of a connection refused, a timeout, a DNS failure and a
-500. The scenario exists to distinguish a rejection from a breakage, and that distinction is
-exactly the status code.
+**Force the locale inside the framework, at class-load time.** A static initialiser in
+`trident-api` calling `Locale.setDefault(Locale.ROOT)` would fix every consumer, generated or
+not. Rejected as far too rude: a test library that silently changes the JVM's default locale
+will eventually break somebody's date formatting assertion, and it would be very hard to find.
 
-**Downgrade REST Assured until a version behaves.** Rejected as unbounded: 5.5.2 and 6.0.1 both
-throw, the behaviour is not version-specific in the range we would accept, and pinning an old
-version to work around an unexplained local behaviour trades one unknown for an older one.
+**Report it upstream and wait.** Worth doing and not a solution: the suite has to work now, and
+pinning the locale is correct regardless of whether REST Assured ever changes.

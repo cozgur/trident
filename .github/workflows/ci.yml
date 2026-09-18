@@ -65,9 +65,13 @@ jobs:
           DOCKER_HOST: unix:///nonexistent/trident-docker-must-not-be-used.sock
         run: |
           ./mvnw -B clean verify -Psmoke 2>&1 | tee smoke.log
-          if grep -qiE "testcontainers|ryuk|Creating container for image|ParaBank started" smoke.log; then
+          # Dependency resolution mentions testcontainers by name on a cold cache, which is not
+          # container activity. Strip Maven's transfer lines first, then look for runtime
+          # evidence only. A warm cache hid this: the check passed for the wrong reason.
+          if grep -vE "^\\[INFO\\] (Downloading|Downloaded|Progress)" smoke.log \
+             | grep -qE "Creating container for image|Ryuk started|ParaBank started|org\\.testcontainers\\.(containers|utility|DockerClientFactory)"; then
             echo "FAIL: the smoke suite touched a container. Matching lines:"
-            grep -inE "testcontainers|ryuk|Creating container for image|ParaBank started" smoke.log | head -20
+            grep -nE "Creating container for image|Ryuk started|ParaBank started|org\\.testcontainers\\." smoke.log | head -20
             exit 1
           fi
           echo "OK: the smoke run shows no container activity."
@@ -101,6 +105,15 @@ jobs:
 
       # Everything below needs Docker. It is a precondition of the api suite alone; the
       # steps above have already passed without it.
+      # The claim the archetype exists to make, checked on every build rather than by hand:
+      # generate a project with parameters unlike any used while writing the template, and run
+      # its suite. Install first - the generated project resolves Trident from the local
+      # repository.
+      - name: Archetype produces a working project
+        run: |
+          ./mvnw -B -q install -DskipTests
+          ./mvnw -B -pl trident-archetype verify -Dtrident.skip.archetype.it=false
+
       - name: Check Docker is available
         run: |
           docker info > /dev/null
