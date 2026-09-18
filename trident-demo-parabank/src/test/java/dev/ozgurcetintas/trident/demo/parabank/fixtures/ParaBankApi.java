@@ -4,6 +4,8 @@ import static io.restassured.RestAssured.given;
 
 import dev.ozgurcetintas.trident.api.RequestSpecFactory;
 import dev.ozgurcetintas.trident.core.config.ConfigProvider;
+import io.restassured.filter.log.RequestLoggingFilter;
+import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.filter.session.SessionFilter;
 import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
@@ -24,7 +26,21 @@ public final class ParaBankApi {
 
     /** A JSON request against the REST API — ParaBank serves XML unless asked for JSON. */
     public static RequestSpecification request() {
-        return given().spec(RequestSpecFactory.from(ConfigProvider.get())).accept(ContentType.JSON);
+        return recorded(
+                given().spec(RequestSpecFactory.from(ConfigProvider.get())).accept(ContentType.JSON));
+    }
+
+    /**
+     * Records the exchange into memory so that a failing scenario can attach it.
+     *
+     * <p>REST Assured's own logging filters, not a filter written here. They write to a
+     * thread-scoped buffer rather than to the console: a passing scenario throws the buffer
+     * away and attaches nothing, and a failing one attaches exactly the requests that led to
+     * it. See {@link ApiExchangeLog}.
+     */
+    private static RequestSpecification recorded(RequestSpecification spec) {
+        return spec.filter(new RequestLoggingFilter(ApiExchangeLog.stream()))
+                .filter(new ResponseLoggingFilter(ApiExchangeLog.stream()));
     }
 
     /**
@@ -35,9 +51,9 @@ public final class ParaBankApi {
      * registration controller requires between the GET and the POST.
      */
     public static RequestSpecification form(SessionFilter session) {
-        return given().spec(RequestSpecFactory.from(ConfigProvider.get()))
+        return recorded(given().spec(RequestSpecFactory.from(ConfigProvider.get()))
                 .filter(session)
                 .accept(ContentType.HTML)
-                .contentType(ContentType.URLENC);
+                .contentType(ContentType.URLENC));
     }
 }

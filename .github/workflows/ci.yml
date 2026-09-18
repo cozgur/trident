@@ -38,6 +38,20 @@ jobs:
           fi
           echo "OK: no target-specific references in the four framework modules."
 
+          # Reporting is the consumer's choice, so no published artifact may drag a report
+          # adapter onto their classpath. Checked on the resolved compile scope rather than on
+          # the POM text, because a transitive dependency is just as much a decision made for
+          # somebody else.
+          for module in trident-core trident-api trident-runner trident-web trident-bom trident-archetype; do
+            ./mvnw -B -q -pl "$module" dependency:list -DincludeScope=compile -DoutputFile="/tmp/deps-$module.txt"
+            if grep -qi "allure" "/tmp/deps-$module.txt"; then
+              echo "FAIL: $module would put Allure on a consumer's classpath:"
+              grep -i "allure" "/tmp/deps-$module.txt"
+              exit 1
+            fi
+          done
+          echo "OK: no published module depends on a report adapter."
+
       # Rule: a scenario owns its data and never resets ParaBank underneath another test.
       # It is stated in CONTRIBUTING, in the strategy and in an ADR; this makes it checked.
       # Scoped to source trees because ADR 0011 documents ParaBank's own first-boot redirect
@@ -118,6 +132,17 @@ jobs:
           ./mvnw -B -q install -DskipTests
           ./mvnw -B -pl trident-archetype verify -Dtrident.skip.archetype.it=false
 
+      # The archetype IT proves the generated project builds. It cannot prove what the web
+      # suite must do, which is exist, be wired to its own reports, and stay out of the way:
+      # a generated project has to be green the minute it is generated, on a machine that may
+      # have no browser. This asserts the skip by absence, then runs the suite to show it works
+      # when asked. The runner has Chrome, so --with-browser is meaningful here.
+      - name: Generated project carries a web suite that only runs when asked
+        run: |
+          .github/scripts/verify-generated-project.sh \
+            trident-archetype/target/test-classes/projects/basic/project/billing-suite \
+            --with-browser
+
       - name: Check Docker is available
         run: |
           docker info > /dev/null
@@ -161,6 +186,28 @@ jobs:
             --reports trident-demo-parabank/target/failsafe-web-reports \
             --messages trident-demo-parabank/target/web-cucumber-messages.ndjson \
             --expect-zero-scenarios
+
+      # Generated after the negative controls, which add nothing to allure-results because a
+      # run that executes no scenario has nothing to report. Verified rather than assumed: the
+      # results directory holds the same number of files before and after one.
+      #
+      # The check is on contents, not on exit code. Allure writes an index.html whether or not
+      # any result reached it, so a report that generated successfully and is empty looks
+      # exactly like one that worked.
+      - name: Build the Allure report
+        run: |
+          ./mvnw -B -q -pl trident-demo-parabank allure:report
+          python3 .github/scripts/check-allure-report.py \
+            --report trident-demo-parabank/target/site/allure-maven-plugin \
+            --expect-scenarios 13 \
+            --expect-suites 4
+
+      - name: Upload the Allure report
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: trident-demo-parabank/target/site/allure-maven-plugin/
+          if-no-files-found: error
 
       - name: Upload test reports
         if: failure()
@@ -223,6 +270,12 @@ jobs:
         with:
           name: execution-evidence
           path: evidence/
+
+      - name: Download the Allure report
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-report
+          path: site/allure/
 
       # Times the released onboarding path, not this commit's. continue-on-error because the
       # measurement depends on Central being up and on a release existing: neither is a fact

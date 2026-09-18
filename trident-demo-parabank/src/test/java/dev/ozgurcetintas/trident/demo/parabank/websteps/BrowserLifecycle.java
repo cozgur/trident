@@ -29,8 +29,14 @@ public class BrowserLifecycle {
     /**
      * Runs even when the scenario failed before opening anything: {@code quit()} is a no-op
      * when this thread has no driver, so the hook needs no guard of its own.
+     *
+     * <p>{@code order = 1}, and explicitly rather than by leaving Cucumber's default of 10000.
+     * Cucumber runs {@code @After} hooks highest order first, so anything that wants to look at
+     * the browser — a screenshot on failure, for one — must run before this and therefore
+     * carries a higher number. Left at the default, this hook closed the browser first and the
+     * screenshot hook found nothing to photograph. That is exactly how it was found.
      */
-    @After("@web")
+    @After(value = "@web", order = 1)
     public void stopBrowser() {
         DriverProvider.quit();
     }

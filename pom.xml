@@ -63,12 +63,31 @@
     <!-- Overridden to false only by the deliberately empty placeholder modules. -->
     <trident.javadoc.failOnError>true</trident.javadoc.failOnError>
     <selenium.version>4.49.0</selenium.version>
+    <!--
+      Allure is a reporting adapter, and it is deliberately absent from every published module:
+      trident-core, trident-api, trident-runner and trident-web carry no dependency on it. A
+      test framework that forces a reporting tool on its consumers has made a choice that is
+      not its to make.
+
+      For the same reason the archetype does not generate it either. Which report a team uses
+      is their decision, exactly as parallel execution is - see ADR 0018 - so the generated
+      project's README says how to add it and links the reference implementation's wiring, and
+      the generated POM stays free of it. Here it is test-scoped in trident-demo-parabank and
+      nowhere else.
+
+      2.x rather than 3.0.0: the report generator (allure-commandline) is still on the 2.x line,
+      and a 3.x adapter writing results for a 2.x generator is a combination nothing here has
+      measured.
+    -->
+    <allure.version>2.35.5</allure.version>
     <testcontainers.version>2.0.5</testcontainers.version>
     <assertj.version>3.27.3</assertj.version>
     <slf4j.version>2.0.17</slf4j.version>
 
     <!-- Plugin versions. Every plugin version in this repository resolves here. -->
     <maven.compiler.plugin.version>3.14.1</maven.compiler.plugin.version>
+    <allure.maven.plugin.version>2.18.0</allure.maven.plugin.version>
+    <allure.report.version>2.46.1</allure.report.version>
     <!--
       Surefire 3.5.3 is deliberately skipped: it reports "Tests run: 0" for a JUnit Platform
       @Suite even when the suite executes, which silently defeats failIfNoTests and the CI
@@ -127,6 +146,11 @@
         <groupId>org.seleniumhq.selenium</groupId>
         <artifactId>selenium-java</artifactId>
         <version>${selenium.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.qameta.allure</groupId>
+        <artifactId>allure-cucumber7-jvm</artifactId>
+        <version>${allure.version}</version>
       </dependency>
       <dependency>
         <groupId>org.testcontainers</groupId>

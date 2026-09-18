@@ -62,6 +62,11 @@
       <artifactId>trident-api</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>dev.ozgurcetintas.trident</groupId>
+      <artifactId>trident-web</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <dependency>
       <groupId>io.cucumber</groupId>
@@ -152,11 +157,7 @@
         <artifactId>maven-failsafe-plugin</artifactId>
         <version>${maven.failsafe.plugin.version}</version>
         <configuration>
-          <includes>
-            <include>**/*IT.java</include>
-          </includes>
           <failIfNoTests>true</failIfNoTests>
-          <skipITs>${trident.skip.api.suite}</skipITs>
           <!--
             Tests run in a fixed locale. This is ordinary hygiene - a suite whose result depends
             on the developer's locale is not a suite - and here it is load-bearing: REST Assured
@@ -167,32 +168,80 @@
             JVM start.
           -->
           <argLine>-Duser.language=en -Duser.country=US</argLine>
-
-          <systemPropertyVariables>
-            <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
-            <!-- Add your support package here when it holds glue, such as a container. -->
-            <cucumber.glue>dev.ozgurcetintas.trident.runner, ${package}.steps</cucumber.glue>
-            <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
-          </systemPropertyVariables>
         </configuration>
         <executions>
+          <!--
+            One execution per suite, not one execution with two tags. Each gets its own
+            includes, its own composed tag expression, its own glue, its own message log and its
+            own reports directory - so a failure says which layer broke rather than "the
+            integration suite".
+
+            Each also carries its own summaryFile. Failsafe's verify goal reads the summary its
+            integration-test goal wrote, and two executions sharing the default path would have
+            the second overwrite the first.
+          -->
           <execution>
-            <id>integration-test</id>
+            <id>api-suite</id>
             <goals>
               <goal>integration-test</goal>
               <goal>verify</goal>
             </goals>
+            <configuration>
+              <includes>
+                <include>**/${prefix}IT.java</include>
+              </includes>
+              <skipITs>${trident.skip.api.suite}</skipITs>
+              <reportsDirectory>target/failsafe-reports</reportsDirectory>
+              <summaryFile>target/failsafe-reports/failsafe-summary-api.xml</summaryFile>
+              <systemPropertyVariables>
+                <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
+                <!-- Add your support package here when it holds glue, such as a container. -->
+                <cucumber.glue>dev.ozgurcetintas.trident.runner, ${package}.steps</cucumber.glue>
+                <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
+              </systemPropertyVariables>
+            </configuration>
+          </execution>
+
+          <execution>
+            <id>web-suite</id>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+            <configuration>
+              <includes>
+                <include>**/${prefix}WebIT.java</include>
+              </includes>
+              <skipITs>${trident.skip.web.suite}</skipITs>
+              <reportsDirectory>target/failsafe-web-reports</reportsDirectory>
+              <summaryFile>target/failsafe-web-reports/failsafe-summary-web.xml</summaryFile>
+              <systemPropertyVariables>
+                <cucumber.filter.tags>@web and (${trident.tags})</cucumber.filter.tags>
+                <!--
+                  The browser lifecycle has its own glue package. Cucumber runs hooks for every
+                  glue package a suite loads, so a browser hook on the shared steps path would
+                  open a browser for the api suite as well.
+                -->
+                <cucumber.glue>dev.ozgurcetintas.trident.runner, ${package}.websteps</cucumber.glue>
+                <cucumber.plugin>pretty, summary, message:target/web-cucumber-messages.ndjson</cucumber.plugin>
+              </systemPropertyVariables>
+            </configuration>
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 
   <!--
-    profile      tags        suite           Docker
-    smoke        @smoke      Surefire only   no    (default)
-    api          @api        Failsafe only   depends on your target
-    regression   not @wip    Surefire only   no
+    profile      tags        suite                 needs
+    smoke        @smoke      Surefire only         nothing            (default)
+    api          @api        Failsafe api-suite    your target
+    web          @web        Failsafe web-suite    a browser
+    regression   not @wip    Surefire only         nothing
+
+    Every profile names every skip flag. A profile that leaves one unset inherits whatever was
+    set last, which is how a suite ends up running in a profile that never meant to run it.
   -->
   <profiles>
     <profile>
@@ -204,6 +253,7 @@
         <trident.tags>@smoke</trident.tags>
         <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
         <trident.skip.api.suite>true</trident.skip.api.suite>
+        <trident.skip.web.suite>true</trident.skip.web.suite>
       </properties>
     </profile>
     <profile>
@@ -212,6 +262,16 @@
         <trident.tags>@api</trident.tags>
         <trident.skip.smoke.suite>true</trident.skip.smoke.suite>
         <trident.skip.api.suite>false</trident.skip.api.suite>
+        <trident.skip.web.suite>true</trident.skip.web.suite>
+      </properties>
+    </profile>
+    <profile>
+      <id>web</id>
+      <properties>
+        <trident.tags>@web</trident.tags>
+        <trident.skip.smoke.suite>true</trident.skip.smoke.suite>
+        <trident.skip.api.suite>true</trident.skip.api.suite>
+        <trident.skip.web.suite>false</trident.skip.web.suite>
       </properties>
     </profile>
     <profile>
@@ -220,6 +280,7 @@
         <trident.tags>not @wip</trident.tags>
         <trident.skip.smoke.suite>false</trident.skip.smoke.suite>
         <trident.skip.api.suite>true</trident.skip.api.suite>
+        <trident.skip.web.suite>true</trident.skip.web.suite>
       </properties>
     </profile>
   </profiles>

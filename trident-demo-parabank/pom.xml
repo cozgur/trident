@@ -123,6 +123,16 @@
       <artifactId>json-schema-validator</artifactId>
       <scope>test</scope>
     </dependency>
+    <!--
+      Reporting, and test-scoped on purpose. No published Trident module depends on Allure; a
+      consumer who wants a different report deletes this dependency and the cucumber.plugin
+      entries below, and nothing else changes.
+    -->
+    <dependency>
+      <groupId>io.qameta.allure</groupId>
+      <artifactId>allure-cucumber7-jvm</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <!--
@@ -175,7 +185,8 @@
             -->
             <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps</cucumber.glue>
             <!-- Each suite writes its own message log; see junit-platform.properties. -->
-            <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson</cucumber.plugin>
+            <cucumber.plugin>pretty, summary, message:target/cucumber-messages.ndjson, io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm</cucumber.plugin>
+            <allure.results.directory>target/allure-results</allure.results.directory>
             <!--
               Pinned single-threaded, and not by omission. One scenario gains nothing from
               concurrency, and the quickstart's promise is that the fast run is the simple one:
@@ -226,8 +237,9 @@
                 <!-- "@api and (...)": this suite can never execute a @smoke or @web scenario. -->
                 <cucumber.filter.tags>@api and (${trident.tags})</cucumber.filter.tags>
                 <!-- This suite adds the container lifecycle; the smoke suite has no container. -->
-                <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
-                <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson</cucumber.plugin>
+                <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.steps, dev.ozgurcetintas.trident.demo.parabank.container, dev.ozgurcetintas.trident.demo.parabank.reporting</cucumber.glue>
+                <cucumber.plugin>pretty, summary, message:target/failsafe-cucumber-messages.ndjson, io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm</cucumber.plugin>
+                <allure.results.directory>target/allure-results</allure.results.directory>
                 <!--
                   Scenario level, which is the engine's default once parallelism is on: each
                   pickle is a test. Feature level would serialise the eight scenarios of one
@@ -265,8 +277,9 @@
                   would open one for the api suite too - the same shape of defect that once
                   started a container for the Docker-free smoke run.
                 -->
-                <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.websteps, dev.ozgurcetintas.trident.demo.parabank.container</cucumber.glue>
-                <cucumber.plugin>pretty, summary, message:target/web-cucumber-messages.ndjson</cucumber.plugin>
+                <cucumber.glue>dev.ozgurcetintas.trident.runner, dev.ozgurcetintas.trident.demo.parabank.websteps, dev.ozgurcetintas.trident.demo.parabank.container, dev.ozgurcetintas.trident.demo.parabank.reporting</cucumber.glue>
+                <cucumber.plugin>pretty, summary, message:target/web-cucumber-messages.ndjson, io.qameta.allure.cucumber7jvm.AllureCucumber7Jvm</cucumber.plugin>
+                <allure.results.directory>target/allure-results</allure.results.directory>
                 <!--
                   Scenario level, which is the engine's default once parallelism is on: each
                   pickle is a test. Feature level would serialise the eight scenarios of one
@@ -284,6 +297,26 @@
         </executions>
       </plugin>
 
+      <!--
+        Generates the HTML report from whatever allure-results the suites left behind. Not bound
+        to a phase: it is invoked explicitly, because generating a report is not part of
+        deciding whether the build passed.
+
+          ./mvnw -pl trident-demo-parabank allure:report
+
+        The three suites write into one results directory on purpose. They stay distinguishable
+        in the report by their tags - @smoke, @api, @web - and by their feature files, and one
+        report that covers the run is more useful than three that each cover a third of it.
+      -->
+      <plugin>
+        <groupId>io.qameta.allure</groupId>
+        <artifactId>allure-maven</artifactId>
+        <version>${allure.maven.plugin.version}</version>
+        <configuration>
+          <reportVersion>${allure.report.version}</reportVersion>
+          <resultsDirectory>${project.build.directory}/allure-results</resultsDirectory>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
