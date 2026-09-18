@@ -24,6 +24,7 @@ happened, the numbers are in the record.
 | [0016](0016-a-controlled-variable-that-never-varies.md) | A variable held constant across every measurement is invisible | 2 |
 | [0017](0017-locator-strategy-for-an-unmodifiable-ui.md) | Locators for a UI we are not allowed to change | 3 |
 | [0018](0018-parallel-execution-at-scenario-level.md) | Parallel execution: the suite was ready, the application was not | 3 |
+| [0019](0019-one-container-per-thread.md) | One container per thread: it works, and it is slower | 3 |
 
 ## About 0009
 
@@ -43,4 +44,4 @@ Copy the shape of any existing record: **Status**, **Context**, **Decision**, **
 alternative is not a decision, and the reason an option lost is the part a future reader needs
 when they are about to choose it again.
 
-Number the next one 0019.
+Number the next one 0020.
