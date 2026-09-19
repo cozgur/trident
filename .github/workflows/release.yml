@@ -52,12 +52,35 @@ jobs:
       - name: Framework modules know nothing about the target
         run: |
           if grep -riE "parabank|testcontainers|docker" \
-               trident-core/src trident-api/src trident-runner/src \
-               trident-core/pom.xml trident-api/pom.xml trident-runner/pom.xml; then
+               trident-core/src trident-api/src trident-runner/src trident-web/src \
+               trident-core/pom.xml trident-api/pom.xml trident-runner/pom.xml trident-web/pom.xml; then
             echo "FAIL: target-specific reference found in a published module (above)."
             exit 1
           fi
-          echo "OK: no target-specific references in trident-core, trident-api or trident-runner."
+          echo "OK: no target-specific references in the four framework modules."
+
+          for module in trident-core trident-api trident-runner trident-web trident-bom trident-archetype; do
+            ./mvnw -B -q -pl "$module" dependency:list -DincludeScope=compile -DoutputFile="/tmp/deps-$module.txt"
+            if grep -qi "allure" "/tmp/deps-$module.txt"; then
+              echo "FAIL: $module would put Allure on a consumer's classpath:"
+              grep -i "allure" "/tmp/deps-$module.txt"
+              exit 1
+            fi
+          done
+          echo "OK: no published module depends on a report adapter."
+
+      - name: Locators stay out of step definitions
+        run: |
+          step_packages=$(find . -type d \( -name steps -o -name websteps \) -not -path "*/target/*")
+          if [ -z "$step_packages" ]; then
+            echo "FAIL: found no step packages to check; this guard is looking in the wrong place."
+            exit 1
+          fi
+          if grep -rnE "org\.openqa\.selenium\.By|(^|[^A-Za-z.])By\." $step_packages; then
+            echo "FAIL: a locator reached a step definition (above)."
+            exit 1
+          fi
+          echo "OK: no locator in any step definition."
 
       - name: Build and run the smoke suite
         run: ./mvnw -B clean verify -Psmoke
@@ -76,6 +99,19 @@ jobs:
           python3 .github/scripts/execution-report.py \
             --reports trident-demo-parabank/target/failsafe-reports \
             --messages trident-demo-parabank/target/failsafe-cucumber-messages.ndjson
+
+      # Added for 1.1.0, and it should have been here the moment the third suite existed: this
+      # release publishes trident-web, and without these two steps the module's own suite would
+      # never run on the path that publishes it. A release gate that is weaker than the branch
+      # gate is not a gate.
+      - name: Run the web suite
+        run: ./mvnw -B verify -Pweb
+
+      - name: Scenario-execution gate - web suite
+        run: |
+          python3 .github/scripts/execution-report.py \
+            --reports trident-demo-parabank/target/failsafe-web-reports \
+            --messages trident-demo-parabank/target/web-cucumber-messages.ndjson
 
       - name: Publish
         env:
