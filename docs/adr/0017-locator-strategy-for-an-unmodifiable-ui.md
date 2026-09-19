@@ -70,11 +70,18 @@ totals row", "the dropdown has options" are the useful shapes.
   the kind of markup change nobody announces.
 - Relative locators cost a second query — the anchor, then the element — and they are slower
   and harder to debug than an id would be. On the login form there is no id to prefer.
-- Steps contain no `By` at all. That is checked by grep and is the technical form of
-  CONTRIBUTING's promise that nobody is asked to maintain locators in step definitions.
+- Steps contain no `By` at all. That is the technical form of CONTRIBUTING's promise that
+  nobody is asked to maintain locators in step definitions, and CI greps every `steps` and
+  `websteps` package — including the archetype's templates — to keep it true. This record said
+  "checked by grep" for a phase while the grep was something a human ran, which is the same
+  shape of overclaim a pre-tag review caught in [ADR 0011](0011-readiness-probe-triggers-schema-init.md).
 - The scanner reads string literals, so a locator assembled at run time from pieces slips past
   it. Known and accepted: the point is to stop the easy mistake, and anyone concatenating their
   way around it has stopped making it by accident.
+- It walks the page-object package recursively. It did not at first — it listed one directory —
+  so moving an offending locator into a subpackage satisfied it, which is where page objects go
+  as soon as there are more than a handful. A guard that can be satisfied by moving the problem
+  is not a guard, and there is now a case asserting it reaches a package one level down.
 
 ## Alternatives rejected
 

@@ -14,6 +14,13 @@ import org.aeonbits.owner.Config.Sources;
  * {@code MERGE} makes the two sources behave as a fallback chain: a key defined in
  * {@code config/${env}.properties} wins, and every key it omits falls back to
  * {@code config/default.properties}.
+ *
+ * <p><strong>Not an extension point.</strong> Owner generates the implementation; nothing is
+ * expected to implement this interface by hand. That is what lets a key be added in a minor
+ * release — {@code browser} and {@code browser.headless} arrived in 1.1.0 — without it being a
+ * breaking change, because adding an abstract method breaks implementors and there are none.
+ * Add a value of your own in a properties file, or override one with a system property or the
+ * mapped environment variable; do not subclass this to get there.
  */
 @LoadPolicy(LoadType.MERGE)
 @Sources({"classpath:config/${env}.properties", "classpath:config/default.properties"})

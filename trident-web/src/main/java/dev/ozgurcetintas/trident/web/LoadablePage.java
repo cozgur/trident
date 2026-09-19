@@ -109,8 +109,19 @@ public abstract class LoadablePage {
      * @param url the address to open
      */
     protected final void openAt(String url) {
-        driver.get(url);
         loaded = false;
+        try {
+            driver.get(url);
+        } catch (TimeoutException e) {
+            // awaitLoaded below names the page and says where the browser is; a navigation that
+            // times out first would otherwise surface as a bare Selenium error mentioning
+            // neither. Same failure, same quality of message.
+            throw new TridentException(
+                    "The " + pageName() + " page did not finish loading within the configured page-load "
+                            + "timeout while navigating to " + url + ". The server is slow to respond, or "
+                            + "the timeout is shorter than this application needs.",
+                    e);
+        }
         awaitLoaded();
     }
 
@@ -170,15 +181,5 @@ public abstract class LoadablePage {
     protected final WebDriverWait waiter() {
         awaitLoaded();
         return wait;
-    }
-
-    /**
-     * Where the browser currently is. Not guarded, so it can be read while diagnosing a page
-     * that did not load.
-     *
-     * @return the current URL
-     */
-    protected final String currentUrl() {
-        return driver.getCurrentUrl();
     }
 }

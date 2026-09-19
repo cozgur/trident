@@ -52,6 +52,26 @@ jobs:
           done
           echo "OK: no published module depends on a report adapter."
 
+      # Rule: steps say what a person does; where the controls are is the page object's
+      # business. CONTRIBUTING promises that nobody is asked to maintain locators in step
+      # definitions and ADR 0017 says the rule is checked - so here is the check. It was stated
+      # as enforced for a phase while being enforced by hand, which is the same shape of
+      # overclaim a pre-tag review caught in ADR 0011.
+      - name: Locators stay out of step definitions
+        run: |
+          step_packages=$(find . -type d \( -name steps -o -name websteps \) -not -path "*/target/*")
+          if [ -z "$step_packages" ]; then
+            echo "FAIL: found no step packages to check; this guard is looking in the wrong place."
+            exit 1
+          fi
+          echo "Checking: $step_packages"
+          if grep -rnE "org\.openqa\.selenium\.By|(^|[^A-Za-z.])By\." $step_packages; then
+            echo "FAIL: a locator reached a step definition (above)."
+            echo "Locators live in page objects; see docs/adr/0017-locator-strategy-for-an-unmodifiable-ui.md."
+            exit 1
+          fi
+          echo "OK: no locator in any step definition."
+
       # Rule: a scenario owns its data and never resets ParaBank underneath another test.
       # It is stated in CONTRIBUTING, in the strategy and in an ADR; this makes it checked.
       # Scoped to source trees because ADR 0011 documents ParaBank's own first-boot redirect

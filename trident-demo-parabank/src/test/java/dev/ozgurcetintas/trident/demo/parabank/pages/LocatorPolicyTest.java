@@ -89,6 +89,32 @@ class LocatorPolicyTest {
     }
 
     /**
+     * The scan reaches page objects in subpackages, not only the top level.
+     *
+     * <p>Without this the guard is satisfied by moving the offending locator one directory
+     * down, which is exactly where page objects go once there are more than a handful.
+     */
+    @Test
+    void theScannerReachesSubpackages() {
+        Path nested = writeTemporarySource(
+                """
+                package example.checkout;
+
+                final class NestedLocators {
+                    static final String ABSOLUTE = "//div[@id='cart']//button";
+                }
+                """,
+                "deeper");
+
+        List<String> violations = scan(nested.getParent().getParent());
+
+        assertThat(violations)
+                .as("a locator one package down must still be found")
+                .hasSize(1);
+        assertThat(violations.get(0)).contains("absolute XPath");
+    }
+
+    /**
      * A guard on the guard. If the sources ever move, the scan above would find no files, find
      * no violations and pass while checking nothing.
      */
@@ -117,12 +143,22 @@ class LocatorPolicyTest {
         return violations;
     }
 
+    /**
+     * Every page-object source, at any depth.
+     *
+     * <p>{@code Files.walk} rather than {@code Files.list}, which is the difference between
+     * covering the package and covering its top level. A suite that groups page objects into
+     * subpackages — {@code pages/checkout}, {@code pages/admin} — is the normal shape as soon
+     * as there are more than a few of them, and the non-recursive version passed those
+     * silently: a guard satisfied while the thing it guards against was still there.
+     */
     private static List<Path> sourcesIn(Path directory) {
         if (!Files.isDirectory(directory)) {
             return List.of();
         }
-        try (Stream<Path> files = Files.list(directory)) {
-            return files.filter(path -> path.getFileName().toString().endsWith(".java"))
+        try (Stream<Path> files = Files.walk(directory)) {
+            return files.filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().endsWith(".java"))
                     // This test is not a page object, and it quotes the banned shapes on purpose.
                     .filter(path -> !path.getFileName().toString().equals("LocatorPolicyTest.java"))
                     .sorted()
@@ -141,9 +177,18 @@ class LocatorPolicyTest {
     }
 
     private static Path writeTemporarySource(String content) {
+        return writeTemporarySource(content, null);
+    }
+
+    /** Writes a source file, optionally one subdirectory down, and cleans up after itself. */
+    private static Path writeTemporarySource(String content, String subdirectory) {
         try {
             Path directory = Files.createTempDirectory("trident-locator-policy");
             directory.toFile().deleteOnExit();
+            if (subdirectory != null) {
+                directory = Files.createDirectory(directory.resolve(subdirectory));
+                directory.toFile().deleteOnExit();
+            }
             Path source = directory.resolve("BadLocators.java");
             Files.writeString(source, content);
             source.toFile().deleteOnExit();
