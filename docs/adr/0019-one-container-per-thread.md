@@ -2,7 +2,10 @@
 
 ## Status
 
-Accepted, as an option that is off by default.
+Accepted as a record. **The mechanism is not shipped** — it was built, measured and then
+deleted. What is kept here is the design and the numbers, which is the part worth keeping.
+
+See [NON-GOALS](../NON-GOALS.md).
 
 ## Context
 
@@ -64,31 +67,43 @@ not a 4× one, and then paid twice the startup for it.
 
 ## Decision
 
-The mechanism ships, off by default.
+**The mechanism is deleted. This record is what survives it.**
 
-`trident.parabank.instances` is 1 unless set, which is byte-for-byte the behaviour that was
-there before: one container, one address, the same value configuration already carried. Four
-instances is one flag:
+It shipped switched off for about a day, on the reasoning that ADR 0018 had kept the parallel
+wiring it disabled, so this could be kept too. That reasoning does not hold, and the difference
+is worth stating because it is the general rule:
 
-```bash
-./mvnw -Papi verify -Dtrident.parallel.enabled=true \
-  -Dtrident.parallel.strategy=fixed -Dtrident.parallel.threads=4 \
-  -Dtrident.parabank.instances=4
-```
+- What ADR 0018 kept switched off is **one configuration property with its reason beside it**.
+  Nothing reads it unless you set it, there is no second path through the code, and a future
+  change cannot break it without noticing.
+- What this was is **about sixty lines and a second lifecycle path with no caller**. Every
+  future change to the container lifecycle would have had to be read against it, tested against
+  it, and would eventually have broken it — earning nothing, because nothing ran it.
 
-It is kept rather than deleted for the same reason ADR 0018 kept the parallel wiring it had
-just switched off: the measurement is only useful if the next person can reproduce it in one
-command, and a target that is slower here may not be slower there. It is not a default, and
-this record is the reason it is not.
+Code with no caller is not an option, it is a liability with documentation attached. The
+approach and the measurements are what a future phase needs, and they are here. Rebuilding from
+this record is a morning's work, and it starts from a known answer instead of a blank page.
+
+The two facts that would otherwise have to be rediscovered:
+
+**No framework change is needed.** `RequestSpecFactory.from(config)` returns a specification
+carrying the configured base URI, and `spec.baseUri(...)` replaces it. The override belongs in
+the project that knows its target comes in instances, applied per request, and `ConfigProvider`
+never learns that instances exist.
+
+**The shape that worked.** Start N instances concurrently in `@BeforeAll`; hold their addresses
+in a queue; let each thread claim one on first use and keep it in a `ThreadLocal`; warn loudly
+when there are more threads than instances, because sharing silently returns you to the defect
+in ADR 0018.
 
 ## Consequences
 
-- The api suite is as fast as it was, because nothing changed for it.
-- Anyone who needs concurrency against an application that cannot take it now has a worked
-  mechanism and a number to beat.
-- `ParaBankLifecycle` carries a second mode. That is real complexity for a path nothing runs by
-  default, and it is the main argument for deleting all of this; the counter-argument is that
-  the alternative is a paragraph in a document describing code that does not exist.
+- The api suite is as fast as it was, and `ParaBankLifecycle` has one lifecycle path: start one
+  container, stop one container.
+- Anyone who needs concurrency against an application that cannot take it has the approach, the
+  seam it hangs on, and a number to beat, without a dormant implementation to maintain.
+- This record describes code that no longer exists, which is a real cost: prose can drift from
+  a codebase in a way that a compiled path cannot. It is the smaller cost of the two.
 - The break-even is calculable and it is far away. The fleet has to save 6.5 seconds in the
   scenario phase to pay for itself, and it saved 0.6. On these ratios the serial scenario phase
   would have to be roughly ten times longer — a suite of eighty-odd api scenarios rather than
@@ -101,6 +116,10 @@ this record is the reason it is not.
 wins over six seconds. Rejected because the single-instance suite is *also* correct — it passes
 20 of 20 — so the six seconds buys nothing at this size. A default that is slower and no more
 reliable is just a slower default.
+
+**Keep it as an opt-in flag.** What this record originally decided, and it was wrong. See the
+Decision above: the cost of an unused code path is paid by every future reader of the lifecycle,
+and it is paid whether or not anyone ever sets the flag.
 
 **A thread-scoped base URI inside `trident-core`.** The obvious place to solve "each thread
 needs a different address", and it would have made the demo simpler. Rejected because it was

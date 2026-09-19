@@ -11,15 +11,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,55 +45,13 @@ public class ParaBankLifecycle {
 
     private static final Duration REST_READINESS_TIMEOUT = Duration.ofMinutes(1);
 
-    /**
-     * How many ParaBank instances to run. One by default, which is what ships.
-     *
-     * <p>ADR 0018 measured that this application cannot create two rows at once, so scenario
-     * level parallelism against a single instance fails about half its registrations. More than
-     * one instance is the other way to isolate: give each thread its own application rather
-     * than trying to make one application concurrent. Set
-     * {@code -Dtrident.parabank.instances=4} to try it.
-     */
-    private static final String INSTANCES_PROPERTY = "trident.parabank.instances";
-
-    private static final List<ParaBankContainer> CONTAINERS = new CopyOnWriteArrayList<>();
-
-    /** Instance addresses not yet claimed by a thread. */
-    private static final Queue<String> UNCLAIMED = new ConcurrentLinkedQueue<>();
-
-    /** The instance this thread claimed, held for the life of the thread. */
-    private static final ThreadLocal<String> CLAIMED = new ThreadLocal<>();
-
     private static ParaBankContainer container;
 
     @BeforeAll
     public static void startParaBank() {
-        int instances = Math.max(1, Integer.getInteger(INSTANCES_PROPERTY, 1));
         Instant start = Instant.now();
-
-        // Started together rather than one after another: four sequential starts would cost
-        // four times the wait, and the whole question is whether the wall clock improves.
-        try (ExecutorService pool = Executors.newFixedThreadPool(instances)) {
-            List<Future<ParaBankContainer>> pending = new ArrayList<>();
-            for (int i = 0; i < instances; i++) {
-                pending.add(pool.submit(() -> {
-                    ParaBankContainer started = new ParaBankContainer();
-                    started.start();
-                    return started;
-                }));
-            }
-            for (Future<ParaBankContainer> future : pending) {
-                CONTAINERS.add(future.get());
-            }
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException("Interrupted while starting ParaBank", e);
-        } catch (ExecutionException e) {
-            throw new IllegalStateException("A ParaBank instance failed to start", e.getCause());
-        }
-
-        container = CONTAINERS.get(0);
-        CONTAINERS.forEach(each -> UNCLAIMED.add(each.baseUri()));
+        container = new ParaBankContainer();
+        container.start();
         Duration startup = Duration.between(start, Instant.now());
 
         // Published as a system property, which is the highest layer of the existing
@@ -113,66 +62,17 @@ public class ParaBankLifecycle {
         System.setProperty(API_BASE_URL_PROPERTY, container.baseUri());
         System.setProperty(WEB_BASE_URL_PROPERTY, container.baseUri());
 
-        CONTAINERS.forEach(each -> awaitRestApi(each.baseUri()));
+        awaitRestApi(container.baseUri());
 
-        LOG.info(
-                "ParaBank started: {} instance(s) in {} ms at {}",
-                CONTAINERS.size(),
-                startup.toMillis(),
-                CONTAINERS.stream().map(ParaBankContainer::baseUri).toList());
+        LOG.info("ParaBank started in {} ms at {}", startup.toMillis(), container.baseUri());
     }
 
     @AfterAll
     public static void stopParaBank() {
-        CONTAINERS.forEach(ParaBankContainer::stop);
-        if (!CONTAINERS.isEmpty()) {
-            LOG.info("ParaBank stopped: {} instance(s)", CONTAINERS.size());
+        if (container != null) {
+            container.stop();
+            LOG.info("ParaBank stopped");
         }
-        CONTAINERS.clear();
-        UNCLAIMED.clear();
-        container = null;
-    }
-
-    /**
-     * The ParaBank this thread talks to.
-     *
-     * <p>A thread claims an instance the first time it asks and keeps it, so every request from
-     * one scenario reaches one application and no two scenarios share one. With a single
-     * instance — the shipped configuration — every thread claims the same address and this is
-     * the value configuration already held.
-     *
-     * <p>Deliberately not a setter on {@code ConfigProvider}. Configuration is an input to a
-     * run, not something a test may change underneath other tests, and a framework module has
-     * no business knowing that a target comes in instances. The address is applied where it is
-     * known: on the request specification, which accepts an override without the framework
-     * being told anything.
-     *
-     * @return this thread's base URI, or the configured one when no instance is running
-     */
-    public static String baseUriForThisThread() {
-        String mine = CLAIMED.get();
-        if (mine != null) {
-            return mine;
-        }
-        if (CONTAINERS.isEmpty()) {
-            return ConfigProvider.get().apiBaseUrl();
-        }
-        String claimed = UNCLAIMED.poll();
-        if (claimed == null) {
-            // More threads than instances. Sharing is still correct, only slower and back to
-            // being exposed to the defect in ADR 0018, so it is said out loud rather than
-            // discovered later in a message about a username that already exists.
-            claimed = CONTAINERS.get(0).baseUri();
-            LOG.warn(
-                    "More threads than ParaBank instances: thread {} is sharing {}. "
-                            + "Set -D{}={} to give every thread its own.",
-                    Thread.currentThread().getName(),
-                    claimed,
-                    INSTANCES_PROPERTY,
-                    CONTAINERS.size() + 1);
-        }
-        CLAIMED.set(claimed);
-        return claimed;
     }
 
     /**

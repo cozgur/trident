@@ -4,7 +4,6 @@ import static io.restassured.RestAssured.given;
 
 import dev.ozgurcetintas.trident.api.RequestSpecFactory;
 import dev.ozgurcetintas.trident.core.config.ConfigProvider;
-import dev.ozgurcetintas.trident.demo.parabank.container.ParaBankLifecycle;
 import io.restassured.filter.log.RequestLoggingFilter;
 import io.restassured.filter.log.ResponseLoggingFilter;
 import io.restassured.filter.session.SessionFilter;
@@ -27,8 +26,8 @@ public final class ParaBankApi {
 
     /** A JSON request against the REST API — ParaBank serves XML unless asked for JSON. */
     public static RequestSpecification request() {
-        return onThisThreadsInstance(recorded(
-                given().spec(RequestSpecFactory.from(ConfigProvider.get())).accept(ContentType.JSON)));
+        return recorded(
+                given().spec(RequestSpecFactory.from(ConfigProvider.get())).accept(ContentType.JSON));
     }
 
     /**
@@ -45,22 +44,6 @@ public final class ParaBankApi {
     }
 
     /**
-     * Points the request at the ParaBank instance belonging to this thread.
-     *
-     * <p>With one instance — the shipped configuration — this is the base URI configuration
-     * already carried, and the call is a no-op. With several, it is what keeps two scenarios
-     * off one application.
-     *
-     * <p>Worth noticing where this override happens: on the specification, in the project that
-     * knows its target comes in instances. {@code RequestSpecFactory} sets the configured base
-     * URI and a caller may replace it, so nothing in the framework had to learn about any of
-     * this — no setter on {@code ConfigProvider}, no thread-scoped configuration.
-     */
-    private static RequestSpecification onThisThreadsInstance(RequestSpecification spec) {
-        return spec.baseUri(ParaBankLifecycle.baseUriForThisThread());
-    }
-
-    /**
      * A form request against the HTML UI, used only to register a customer.
      *
      * <p>Same base URI and timeouts as {@link #request()}, with the content type the
@@ -68,9 +51,9 @@ public final class ParaBankApi {
      * registration controller requires between the GET and the POST.
      */
     public static RequestSpecification form(SessionFilter session) {
-        return onThisThreadsInstance(recorded(given().spec(RequestSpecFactory.from(ConfigProvider.get()))
+        return recorded(given().spec(RequestSpecFactory.from(ConfigProvider.get()))
                 .filter(session)
                 .accept(ContentType.HTML)
-                .contentType(ContentType.URLENC)));
+                .contentType(ContentType.URLENC));
     }
 }
