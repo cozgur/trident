@@ -20,8 +20,9 @@ Measured, not estimated: **46 seconds** from a clean clone with an empty `~/.m2`
 broken build.
 
 Adopting Trident in your own project is faster, because you generate rather than clone:
-**9 seconds** from `archetype:generate` to a passing suite, measured with every
-`dev.ozgurcetintas` artifact deleted from `~/.m2` so that all nine resolved from Central. See
+**6 seconds** from `archetype:generate` to a passing suite (5–6 over three runs of 1.1.0),
+measured with every `dev.ozgurcetintas` artifact deleted from `~/.m2` so that all seven the
+project needs resolved from Central. See
 [Start a project](#start-a-project).
 
 Git and Java 21 are the only prerequisites. Maven comes from the wrapper committed in this
