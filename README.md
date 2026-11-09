@@ -14,9 +14,9 @@ its own module and is never published.
 
 ## Run your first test in 5 minutes
 
-Measured, not estimated: **45 seconds** from a clean clone with an empty `~/.m2`, and
-**4 seconds** once the cache is warm. The first run is dominated by downloads — 430 artifacts,
-76 MB — so on a slow connection expect minutes rather than seconds. That is the network, not a
+Measured, not estimated: **46 seconds** from a clean clone with an empty `~/.m2`, and
+**4 seconds** once the cache is warm. The first run is dominated by downloads — 677 artifacts,
+160 MB — so on a slow connection expect minutes rather than seconds. That is the network, not a
 broken build.
 
 Adopting Trident in your own project is faster, because you generate rather than clone:
@@ -52,14 +52,15 @@ Trident is on Maven Central. Generate a project rather than cloning this one:
 mvn archetype:generate \
   -DarchetypeGroupId=dev.ozgurcetintas.trident \
   -DarchetypeArtifactId=trident-archetype \
-  -DarchetypeVersion=1.0.0 \
+  -DarchetypeVersion=1.1.0 \
   -DgroupId=com.example -DartifactId=my-suite -Dprefix=My
 cd my-suite
 mvn -Psmoke verify
 ```
 
-That ends with a passing scenario and no editing. You get both suites, the tag routing, the
-glue split and a first feature file already wired — the things this repository had to get wrong
+That ends with a passing scenario and no editing. You get all three suites (smoke, api, and a
+web suite that runs only under `-Pweb`), the tag routing, the glue split and a first smoke
+and web feature file already wired — the things this repository had to get wrong
 once before getting right.
 
 ## Modules
@@ -71,8 +72,8 @@ once before getting right.
 | `trident-api` | API testing support: request specifications built from configuration. |
 | `trident-web` | Browser driver lifecycle and the loadable page base. No locators: those belong to the consumer. |
 | `trident-mobile` | Mobile testing support. Placeholder until Phase 4. |
-| `trident-runner` | Suite base classes and Cucumber lifecycle hooks. Published. |
-| `trident-archetype` | Project archetype. Placeholder until Phase 2. |
+| `trident-runner` | Suite base classes and Cucumber lifecycle hooks. |
+| `trident-archetype` | Project archetype. Generates a consumer project with the smoke, api and web suites wired. |
 | `trident-demo-parabank` | Reference implementation against ParaBank. **Not published** — feature files, steps and fixtures live here. |
 
 ## Configuration
@@ -161,8 +162,8 @@ so there is nothing to install. To watch it, or to use a different browser:
 |---|---|
 | 0 | Build skeleton and runner wiring — sealed at v0.1.0 |
 | 1 | `trident-api` + `trident-demo-parabank`, ParaBank via Testcontainers, failsafe bound — **done** |
-| 2 | `trident-archetype`, Maven Central publish, and `trident-showcase` — a **separate repository**, not a module here, consuming Trident from Maven Central against a target unrelated to ParaBank |
-| 3 | `trident-web` (Selenium 4), parallel execution, Allure — **done**. The archetype generates the web suite, and reporting covers all three suites. Parallel execution ships wired and switched off: the reference target cannot serve concurrent row creation, measured in [ADR 0018](docs/adr/0018-parallel-execution-at-scenario-level.md). |
+| 2 | `trident-archetype`, Maven Central publish, and `trident-showcase` — a **separate repository**, not a module here, consuming Trident from Maven Central against a target unrelated to ParaBank — **done** |
+| 3 | `trident-web` (Selenium 4), parallel execution, Allure — **done**. The archetype generates the web suite, and the reference implementation reports all of its suites to Allure; generated projects carry no report adapter, by choice. Parallel execution ships wired and switched off: the reference target cannot serve concurrent row creation, measured in [ADR 0018](docs/adr/0018-parallel-execution-at-scenario-level.md). |
 | 4 | `trident-mobile` (Appium 3 server / java-client 10) |
 | 5 | Documentation package and portfolio case study |
 

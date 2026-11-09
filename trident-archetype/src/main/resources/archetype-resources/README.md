@@ -123,9 +123,10 @@ mvn -Psmoke verify -Dapi.base.url=https://staging.example
 API_BASE_URL=https://staging.example mvn -Psmoke verify
 ```
 
-The five keys and their variables are `env`/`ENV`, `web.base.url`/`WEB_BASE_URL`,
-`api.base.url`/`API_BASE_URL`, `timeout.default.seconds`/`TIMEOUT_DEFAULT_SECONDS` and
-`timeout.polling.millis`/`TIMEOUT_POLLING_MILLIS`.
+The seven keys and their variables are `env`/`ENV`, `web.base.url`/`WEB_BASE_URL`,
+`api.base.url`/`API_BASE_URL`, `timeout.default.seconds`/`TIMEOUT_DEFAULT_SECONDS`,
+`timeout.polling.millis`/`TIMEOUT_POLLING_MILLIS`, `browser`/`BROWSER` and
+`browser.headless`/`BROWSER_HEADLESS`.
 
 ## More
 

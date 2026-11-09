@@ -21,10 +21,11 @@ No layer here covers performance, security, accessibility, or behaviour under lo
 separate disciplines, and pretending a functional suite covers them is how teams get surprised
 in production.
 
-## Two suites, and why the fast one stays Docker-free
+## Three suites, and why the fast one stays Docker-free
 
-There are two commands. `./mvnw -Psmoke verify` needs only Git and Java 21. `./mvnw -Papi
-verify` needs Docker and starts the target application in a container.
+There are three commands. `./mvnw -Psmoke verify` needs only Git and Java 21. `./mvnw -Papi
+verify` needs Docker and starts the target application in a container. `./mvnw -Pweb verify`
+needs the same container and a browser.
 
 The split exists because a suite that is inconvenient to run does not get run. The moment a
 developer must install Docker to check their change, the suite stops being something they use

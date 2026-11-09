@@ -21,17 +21,25 @@ Docker. In this repository the target is ParaBank. You are welcome to run it, bu
 expected to. CI runs it on every PR, and CI is the right place for it:
 it takes longer and it will not fail for reasons that have anything to do with your laptop.
 
+```bash
+./mvnw -Pweb verify
+```
+
+This runs the browser scenarios against the same container, so it needs Docker and a browser.
+The same applies: CI runs it on every PR, and you are not expected to.
+
 If you only change production code and the smoke suite is green, open the PR.
 
 ## Adding a scenario
 
 Feature files live in your project's `src/test/resources/features/`. In this repository that
 is `trident-demo-parabank`, the reference implementation; in a consumer project it is the
-project the archetype generated. Two tags decide where a scenario runs, and every scenario
+project the archetype generated. Three tags decide where a scenario runs, and every scenario
 needs exactly one of them:
 
 - `@smoke` — runs under Surefire, no Docker, must stay fast.
 - `@api` — runs under Failsafe against a real container.
+- `@web` — runs under Failsafe in a browser, only under `-Pweb`.
 
 A scenario with neither tag runs nowhere. That is deliberate; see
 [ADR 0010](docs/adr/0010-two-suites-surefire-and-failsafe.md).
