@@ -42,11 +42,20 @@ jobs:
           # adapter onto their classpath. Checked on the resolved compile scope rather than on
           # the POM text, because a transitive dependency is just as much a decision made for
           # somebody else.
-          for module in trident-core trident-api trident-runner trident-web trident-bom trident-archetype; do
-            ./mvnw -B -q -pl "$module" dependency:list -DincludeScope=compile -DoutputFile="/tmp/deps-$module.txt"
-            if grep -qi "allure" "/tmp/deps-$module.txt"; then
+          #
+          # One reactor run, not one -pl run per module. With -pl alone, Maven resolves sibling
+          # modules from the repository, so a module's own Trident dependencies came from the
+          # last published version on Central - this checked 1.0.0's classpath for as long as
+          # 1.0.0 existed, and failed outright the moment the version moved to one Central did
+          # not have yet. compile makes the reactor resolve siblings from target/classes.
+          modules="trident-core trident-api trident-runner trident-web trident-bom trident-archetype"
+          ./mvnw -B -q -pl "$(echo $modules | tr ' ' ',')" -am compile dependency:list \
+            -DincludeScope=compile -DoutputFile=target/compile-deps.txt
+          for module in $modules; do
+            [ -s "$module/target/compile-deps.txt" ] || { echo "FAIL: no dependency list for $module"; exit 1; }
+            if grep -qi "allure" "$module/target/compile-deps.txt"; then
               echo "FAIL: $module would put Allure on a consumer's classpath:"
-              grep -i "allure" "/tmp/deps-$module.txt"
+              grep -i "allure" "$module/target/compile-deps.txt"
               exit 1
             fi
           done
